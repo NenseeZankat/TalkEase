@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../App";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -8,6 +9,7 @@ const Signup = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   const handleSignup = async () => {
     if (!name || !email || !password) {
@@ -24,6 +26,8 @@ const Signup = () => {
 
       // Mock signup logic (replace with real API call)
       if (email.includes("@") && password.length >= 6) {
+        // Create a token and use the login function from context
+        login("mock-jwt-token");
         navigate("/chat"); // Redirect to chat page on success
       } else {
         setError("Invalid email or password.");

@@ -1,7 +1,7 @@
 import { FC } from "react";
-import { FaBars, FaTimes } from "react-icons/fa";
+import { FaBars, FaTimes, FaSignOutAlt } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -9,6 +9,20 @@ interface SidebarProps {
 }
 
 export const Sidebar: FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Perform logout actions here
+    // This could include clearing tokens from localStorage, resetting state, etc.
+    localStorage.removeItem("authToken"); // Example - remove auth token
+    
+    // Close the sidebar
+    setIsOpen(false);
+    
+    // Navigate to login page
+    navigate("/login");
+  };
+
   return (
     <>
       {/* Sidebar Toggle Button - Hide When Open */}
@@ -85,6 +99,18 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             </Link>
           </li>
         </ul>
+
+        {/* Logout Section - Added at the bottom with separator */}
+        <div className="absolute bottom-8 left-0 w-full px-6">
+          <div className="border-t border-gray-700 pt-4 w-full"></div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center text-red-400 hover:text-red-300 cursor-pointer transition mt-2 w-full"
+          >
+            <FaSignOutAlt className="mr-2" size={16} />
+            Logout
+          </button>
+        </div>
       </motion.div>
     </>
   );
