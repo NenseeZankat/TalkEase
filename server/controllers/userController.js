@@ -1,18 +1,13 @@
-const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const faiss = require("faiss-node");
-require("dotenv").config();
 
-const router = express.Router();
-
-// FAISS Index
 const d = 128; // Dimension (adjust based on embeddings)
 const index = new faiss.IndexFlatL2(d);
 
 // Register User
-router.post("/register", async (req, res) => {
+const registerUser = async (req, res) => {
   try {
     const { name, email, password, embedding } = req.body;
 
@@ -34,10 +29,10 @@ router.post("/register", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // Login User
-router.post("/login", async (req, res) => {
+const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -55,10 +50,10 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // Find Similar Users using FAISS
-router.post("/find-similar", async (req, res) => {
+const findSimilarUsers = async (req, res) => {
   try {
     const { embedding } = req.body;
     if (embedding.length !== d) return res.status(400).json({ msg: "Invalid embedding size" });
@@ -73,10 +68,10 @@ router.post("/find-similar", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // Update User
-router.put("/update/:id", async (req, res) => {
+const updateUser = async (req, res) => {
   try {
     const { name, email, password, embedding } = req.body;
     const { id } = req.params;
@@ -106,29 +101,36 @@ router.put("/update/:id", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // Fetch All Users
-router.get("/all-users", async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
 // Find User by ID
-router.get("/user/:id", async (req, res) => {
+const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ msg: "User not found" });
-    
+
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  registerUser,
+  loginUser,
+  findSimilarUsers,
+  updateUser,
+  getAllUsers,
+  getUserById,
+};
