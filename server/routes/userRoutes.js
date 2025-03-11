@@ -29,6 +29,6 @@ userrouter.put("/update/:id", updateUser);
 userrouter.get("/all-users", getAllUsers);
 
 // Find User by ID
-userrouter.get("/user/:id", getUserById);
+userrouter.get("/:id", getUserById);
 
 export default userrouter;
