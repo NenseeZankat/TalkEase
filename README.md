@@ -7,6 +7,8 @@ TalkEase is an AI-powered chatbot built using LLaMA 2 with GPTQ optimization. ðŸ
 - Provides **streaming responses** using FastAPI.
 - Built with **TypeScript, Python, and JavaScript**.
 
+
+
 ## Installation
 Clone the repository:
 ```sh
