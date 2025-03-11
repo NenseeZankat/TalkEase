@@ -1,24 +1,34 @@
-const express = require("express");
-const userController = require("../controllers/userController");
+import express from "express";
+import { saveChatHistory, semanticSearch, getChatHistory } from "../controllers/chatController.js";
+import { registerUser, loginUser, findSimilarUsers, updateUser, getAllUsers, getUserById } from "../controllers/userController.js";
 
-const router = express.Router();
+const userrouter = express.Router();
+
+// Save chat history
+userrouter.post("/save-chat", saveChatHistory);
+
+// Semantic search for similar chats
+userrouter.post("/semantic-search", semanticSearch);
+
+// Get all chat history for a specific user
+userrouter.get("/history/:userId", getChatHistory);
 
 // Register User
-router.post("/register", userController.registerUser);
+userrouter.post("/register", registerUser);
 
 // Login User
-router.post("/login", userController.loginUser);
+userrouter.post("/login", loginUser);
 
 // Find Similar Users
-router.post("/find-similar", userController.findSimilarUsers);
+userrouter.post("/find-similar", findSimilarUsers);
 
 // Update User
-router.put("/update/:id", userController.updateUser);
+userrouter.put("/update/:id", updateUser);
 
 // Fetch All Users
-router.get("/all-users", userController.getAllUsers);
+userrouter.get("/all-users", getAllUsers);
 
 // Find User by ID
-router.get("/user/:id", userController.getUserById);
+userrouter.get("/user/:id", getUserById);
 
-module.exports = router;
+export default userrouter;

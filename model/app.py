@@ -63,4 +63,5 @@ async def chat(request: ChatRequest):
 # Root endpoint
 @app.get("/")
 async def root():
+    print("FastAPI root endpoint")
     return {"message": "LLaMA 2 Chatbot API is running!"}

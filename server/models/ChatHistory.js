@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const chatHistorySchema = new mongoose.Schema(
   {
@@ -6,11 +6,11 @@ const chatHistorySchema = new mongoose.Schema(
     userMessage: { type: String, required: true },
     botResponse: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
-    embeddings: { type: [Number], required: true },  // To store embedding for semantic search
+    embeddings: { type: [Number], required: true }, 
   },
   { timestamps: true }
 );
 
 const ChatHistory = mongoose.model("ChatHistory", chatHistorySchema);
 
-module.exports = ChatHistory;
+export default ChatHistory;

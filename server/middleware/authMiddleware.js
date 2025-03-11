@@ -1,7 +1,8 @@
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 
-module.exports = (req, res, next) => {
+export default (req, res, next) => {
   const token = req.header("Authorization");
   if (!token) return res.status(401).json({ msg: "No token, authorization denied" });
 

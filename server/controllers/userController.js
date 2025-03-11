@@ -1,13 +1,13 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const faiss = require("faiss-node");
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import faiss from "faiss-node";
 
 const d = 128; // Dimension (adjust based on embeddings)
 const index = new faiss.IndexFlatL2(d);
 
 // Register User
-const registerUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   try {
     const { name, email, password, embedding } = req.body;
 
@@ -32,7 +32,7 @@ const registerUser = async (req, res) => {
 };
 
 // Login User
-const loginUser = async (req, res) => {
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -53,7 +53,7 @@ const loginUser = async (req, res) => {
 };
 
 // Find Similar Users using FAISS
-const findSimilarUsers = async (req, res) => {
+export const findSimilarUsers = async (req, res) => {
   try {
     const { embedding } = req.body;
     if (embedding.length !== d) return res.status(400).json({ msg: "Invalid embedding size" });
@@ -70,8 +70,7 @@ const findSimilarUsers = async (req, res) => {
   }
 };
 
-// Update User
-const updateUser = async (req, res) => {
+export const updateUser = async (req, res) => {
   try {
     const { name, email, password, embedding } = req.body;
     const { id } = req.params;
@@ -104,7 +103,7 @@ const updateUser = async (req, res) => {
 };
 
 // Fetch All Users
-const getAllUsers = async (req, res) => {
+export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
@@ -114,7 +113,7 @@ const getAllUsers = async (req, res) => {
 };
 
 // Find User by ID
-const getUserById = async (req, res) => {
+export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findById(id);
@@ -124,13 +123,4 @@ const getUserById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
-
-module.exports = {
-  registerUser,
-  loginUser,
-  findSimilarUsers,
-  updateUser,
-  getAllUsers,
-  getUserById,
 };

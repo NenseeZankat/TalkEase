@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -15,8 +15,8 @@ const UserSchema = new mongoose.Schema({
     required: true,
   },
   embedding: {
-    type: [Number], // Store embeddings as an array of numbers (for FAISS indexing)
+    type: [Number], 
   },
 });
 
-module.exports = mongoose.model("User", UserSchema);
+export default mongoose.model("User", UserSchema);
