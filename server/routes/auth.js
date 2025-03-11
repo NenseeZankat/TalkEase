@@ -1,4 +1,3 @@
-
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -71,6 +70,62 @@ router.post("/find-similar", async (req, res) => {
     index.search(new Float32Array(embedding), k, distances, indices);
 
     res.json({ indices: Array.from(indices), distances: Array.from(distances) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update User
+router.put("/update/:id", async (req, res) => {
+  try {
+    const { name, email, password, embedding } = req.body;
+    const { id } = req.params;
+
+    let user = await User.findById(id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (email) user.email = email;
+    if (name) user.name = name;
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    if (embedding && embedding.length === d) {
+      user.embedding = embedding;
+
+      // Update FAISS index
+      index.remove(user.embedding);
+      index.add(new Float32Array(embedding));
+    }
+
+    await user.save();
+
+    res.json({ msg: "User updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fetch All Users
+router.get("/all-users", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Find User by ID
+router.get("/user/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
