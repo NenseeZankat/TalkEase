@@ -1,6 +1,6 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlus, FaTimes } from "react-icons/fa";
+import { FaPlus, FaTimes, FaSearch, FaFilter } from "react-icons/fa";
 
 interface Chat {
   id: string;
@@ -12,20 +12,183 @@ interface Chat {
 const ChatInterface: FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newChatTitle, setNewChatTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
   const navigate = useNavigate();
+  const headerRef = useRef<HTMLDivElement>(null);
 
-  // Sample chat data with unique IDs
+  // Sample chat data with unique IDs and more categories
   const recentChats: Chat[] = [
     { id: "chat1", title: "Recent Breakup, felt sad", messageCount: 478, category: "Emotion" },
-    { id: "chat2", title: "Shitty Teacher at Uni", messageCount: 356, category: "Emotion" },
-    { id: "chat3", title: "Just wanna stop existing", messageCount: 287, category: "Emotion" }
+    { id: "chat2", title: "Shitty Teacher at Uni", messageCount: 356, category: "Academic" },
+    { id: "chat3", title: "Just wanna stop existing", messageCount: 287, category: "Mental Health" }
   ];
 
   const pastChats: Chat[] = [
-    { id: "chat4", title: "More about this Xmas", messageCount: 423, category: "Emotion" },
-    { id: "chat5", title: "I miss my best friend", messageCount: 312, category: "Emotion" },
-    { id: "chat6", title: "Failed my exam again", messageCount: 189, category: "Emotion" }
+    { id: "chat4", title: "More about this Xmas", messageCount: 423, category: "Holiday" },
+    { id: "chat5", title: "I miss my best friend", messageCount: 312, category: "Relationship" },
+    { id: "chat6", title: "Failed my exam again", messageCount: 189, category: "Academic" }
   ];
+
+  const categories = ["All", "Emotion", "Academic", "Mental Health", "Relationship", "Holiday"];
+
+  // Header parallax effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const scrollPosition = window.scrollY;
+        headerRef.current.style.backgroundPositionY = `${scrollPosition * 0.5}px`;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Background animation effect
+  useEffect(() => {
+    // Create canvas for header background animation
+    const canvas = document.getElementById('header-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas dimensions
+    const setCanvasDimensions = () => {
+      const headerElement = document.querySelector('.header-gradient');
+      if (headerElement) {
+        canvas.width = headerElement.clientWidth;
+        canvas.height = headerElement.clientHeight;
+      }
+    };
+    
+    setCanvasDimensions();
+    window.addEventListener('resize', setCanvasDimensions);
+    
+    // Particle properties
+    const particlesArray: Particle[] = [];
+    const numberOfParticles = 70;
+    
+    class Particle {
+      x: number;
+      y: number;
+      size: number;
+      speedX: number;
+      speedY: number;
+      color: string;
+      opacity: number;
+      pulseSpeed: number;
+      pulseAmount: number;
+      baseSize: number;
+      
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.baseSize = Math.random() * 4 + 1;
+        this.size = this.baseSize;
+        this.speedX = Math.random() * 0.4 - 0.2;
+        this.speedY = Math.random() * 0.4 - 0.2;
+        this.pulseSpeed = Math.random() * 0.1 + 0.05;
+        this.pulseAmount = Math.random() * 1 + 0.5;
+        
+        // Enhanced color palette with more vibrant options
+        const colors = [
+          '#ff007f', // Bright pink
+          '#c77dff', // Lavender
+          '#7b2cbf', // Deep purple
+          '#480ca8', // Indigo
+          '#3f37c9', // Blue-violet
+          '#4cc9f0'  // Cyan
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.opacity = Math.random() * 0.7 + 0.3;
+      }
+      
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        
+        // Pulse size animation
+        this.size = this.baseSize + Math.sin(Date.now() * this.pulseSpeed) * this.pulseAmount;
+        
+        // Bounce off edges
+        if (this.x > canvas.width || this.x < 0) {
+          this.speedX = -this.speedX;
+        }
+        if (this.y > canvas.height || this.y < 0) {
+          this.speedY = -this.speedY;
+        }
+      }
+      
+      draw() {
+        if (!ctx) return;
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Add glow effect
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+      }
+    }
+    
+    // Create particles
+    const init = () => {
+      for (let i = 0; i < numberOfParticles; i++) {
+        particlesArray.push(new Particle());
+      }
+    };
+    
+    // Animation loop
+    const animate = () => {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      
+      // Update and draw particles
+      for (let i = 0; i < particlesArray.length; i++) {
+        particlesArray[i].update();
+        particlesArray[i].draw();
+      }
+      
+      // Add connecting lines between nearby particles
+      for (let a = 0; a < particlesArray.length; a++) {
+        for (let b = a; b < particlesArray.length; b++) {
+          const dx = particlesArray[a].x - particlesArray[b].x;
+          const dy = particlesArray[a].y - particlesArray[b].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 100) {
+            ctx.beginPath();
+            ctx.strokeStyle = particlesArray[a].color;
+            ctx.globalAlpha = 0.2 * (1 - distance / 100);
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+            ctx.stroke();
+          }
+        }
+      }
+      
+      requestAnimationFrame(animate);
+    };
+    
+    init();
+    animate();
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', setCanvasDimensions);
+    };
+  }, []);
+
+  // Chat item hover effect
+  const [hoveredChat, setHoveredChat] = useState<string | null>(null);
 
   const handleNewChat = () => {
     if (newChatTitle.trim()) {
@@ -49,90 +212,252 @@ const ChatInterface: FC = () => {
     });
   };
 
-  // Chat item component for reuse
-  const ChatItem = ({ chat }: { chat: Chat }) => (
-    <div 
-      className="flex items-center p-5 bg-[#1a1b26] rounded-xl shadow-md hover:bg-[#2c2e3e] transition-all border border-gray-700 hover:border-[#c77dff] ring-1 ring-transparent hover:ring-[#c77dff] cursor-pointer"
-      onClick={() => handleChatClick(chat.id, chat.title)}
-    >
-      <div className="w-12 h-12 bg-gray-700 rounded-full mr-4"></div>
-      <div>
-        <p className="font-medium text-white">{chat.title}</p>
-        <p className="text-sm text-gray-400">{chat.messageCount} Total &bull; {chat.category}</p>
-      </div>
-    </div>
+  // Filter chats based on search and category filter
+  const filteredRecentChats = recentChats.filter(chat => 
+    (activeFilter === "All" || chat.category === activeFilter) &&
+    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  const filteredPastChats = pastChats.filter(chat => 
+    (activeFilter === "All" || chat.category === activeFilter) &&
+    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Chat item component for reuse
+  const ChatItem = ({ chat }: { chat: Chat }) => {
+    const isHovered = hoveredChat === chat.id;
+    
+    // Generate random gradient angles for variation
+    const gradientAngle = Math.floor(Math.random() * 360);
+    const avatarGradient = `linear-gradient(${gradientAngle}deg, #7b2cbf, #ff007f)`;
+    
+    return (
+      <div 
+        className={`flex items-center p-5 rounded-xl transition-all duration-300 cursor-pointer relative overflow-hidden ${
+          isHovered 
+            ? 'transform scale-[1.02] z-10' 
+            : 'bg-[#1a1b26]/80 hover:bg-[#2c2e3e]/90'
+        }`}
+        onClick={() => handleChatClick(chat.id, chat.title)}
+        onMouseEnter={() => setHoveredChat(chat.id)}
+        onMouseLeave={() => setHoveredChat(null)}
+      >
+        {/* Background glow effect on hover */}
+        {isHovered && (
+          <div className="absolute inset-0 bg-gradient-to-r from-[#240046] to-[#5a189a] opacity-70 border border-[#c77dff] rounded-xl shadow-[0_0_20px_rgba(199,125,255,0.5)] z-0"></div>
+        )}
+        
+        {/* Chat content */}
+        <div className="relative z-10 flex items-center w-full">
+          <div 
+            className="w-12 h-12 rounded-full mr-4 flex items-center justify-center transition-all shadow-lg"
+            style={{ 
+              background: avatarGradient,
+              transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+            }}
+          >
+            <span className="text-white text-sm font-bold">{chat.title.substring(0, 2).toUpperCase()}</span>
+          </div>
+          <div className="flex-grow">
+            <p className="font-medium text-white">{chat.title}</p>
+            <div className="flex items-center text-sm">
+              <span className="text-gray-400">{chat.messageCount} Total</span>
+              <span className="mx-2 text-gray-500">&bull;</span>
+              <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(chat.category)}`}>
+                {chat.category}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Get category styling
+  const getCategoryColor = (category: string) => {
+    switch(category) {
+      case "Emotion":
+        return "bg-[#ff007f]/20 text-[#ff007f]";
+      case "Academic":
+        return "bg-[#4cc9f0]/20 text-[#4cc9f0]";
+      case "Mental Health":
+        return "bg-[#8338ec]/20 text-[#8338ec]";
+      case "Relationship":
+        return "bg-[#fb5607]/20 text-[#fb5607]";
+      case "Holiday":
+        return "bg-[#06d6a0]/20 text-[#06d6a0]";
+      default:
+        return "bg-[#c77dff]/20 text-[#c77dff]";
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#0d0f18] text-white transition-all rounded-xl shadow-2xl">
       {/* Main content */}
       <div className={`flex flex-col flex-grow transition-all duration-300 ${isModalOpen ? 'blur-sm' : ''}`}>
-        <div className="bg-gradient-to-b from-[#240046] to-[#5a189a] p-16 rounded-b-3xl shadow-lg text-center">
-          <h1 className="text-white text-3xl font-bold">Chat Conversations</h1>
-          <p className="text-gray-400 text-sm mt-1">1571 Total &bull; 32 Left this Month</p>
+        <div 
+          ref={headerRef}
+          className="header-gradient bg-gradient-to-br from-[#240046] via-[#5a189a] to-[#7b2cbf] p-16 rounded-b-3xl shadow-lg text-center relative overflow-hidden"
+        >
+          {/* Canvas for the header animation */}
+          <canvas id="header-canvas" className="absolute inset-0 w-full h-full"></canvas>
+          
+          {/* Header content */}
+          <div className="relative z-10">
+            <h1 className="text-white text-3xl font-bold mb-2">Chat Conversations</h1>
+            <p className="text-gray-200 text-sm">1571 Total &bull; 32 Left this Month</p>
+            
+            {/* Search and filter bar */}
+            <div className="mt-6 flex justify-center">
+              <div className="relative bg-[#1a1b26]/50 backdrop-blur-md rounded-l-full border-y border-l border-gray-700 w-64 flex items-center px-4">
+                <FaSearch className="text-gray-400 mr-2" />
+                <input
+                  type="text"
+                  placeholder="Search chats..."
+                  className="bg-transparent border-none outline-none text-white py-2 w-full placeholder-gray-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="relative bg-[#1a1b26]/50 backdrop-blur-md rounded-r-full border-y border-r border-gray-700 px-4 flex items-center">
+                <FaFilter className="text-gray-400 mr-2" />
+                <select 
+                  className="bg-transparent border-none outline-none text-white py-2 appearance-none pr-8"
+                  value={activeFilter}
+                  onChange={(e) => setActiveFilter(e.target.value)}
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category} className="bg-[#1a1b26] text-white">
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col flex-grow p-8 space-y-6 overflow-y-auto">
-          <h2 className="text-lg font-semibold text-[#c77dff] pb-2">Recent ({recentChats.length})</h2>
-          <div className="space-y-4">
-            {recentChats.map((chat) => (
-              <ChatItem key={chat.id} chat={chat} />
-            ))}
+          {/* Recent chats section */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
+              Recent ({filteredRecentChats.length})
+              <div className="absolute bottom-0 left-0 w-20 h-0.5 bg-gradient-to-r from-[#ff007f] to-[#7b2cbf]"></div>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredRecentChats.map((chat) => (
+                <ChatItem key={chat.id} chat={chat} />
+              ))}
+              {filteredRecentChats.length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500">
+                  No chats found matching your criteria
+                </div>
+              )}
+            </div>
           </div>
 
-          <h2 className="text-lg font-semibold text-[#c77dff] pb-2">Past ({pastChats.length})</h2>
-          <div className="space-y-4">
-            {pastChats.map((chat) => (
-              <ChatItem key={chat.id} chat={chat} />
-            ))}
+          {/* Past chats section */}
+          <div>
+            <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
+              Past ({filteredPastChats.length})
+              <div className="absolute bottom-0 left-0 w-20 h-0.5 bg-gradient-to-r from-[#ff007f] to-[#7b2cbf]"></div>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredPastChats.map((chat) => (
+                <ChatItem key={chat.id} chat={chat} />
+              ))}
+              {filteredPastChats.length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500">
+                  No chats found matching your criteria
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* New chat button with animated glow */}
         <button
-          className="fixed bottom-6 right-6 bg-gradient-to-r from-[#ff007f] to-[#6a00f4] p-5 rounded-full shadow-lg hover:from-[#d90429] hover:to-[#560bad] transition-all cursor-pointer"
+          className="fixed bottom-6 right-6 bg-gradient-to-r from-[#ff007f] to-[#6a00f4] p-5 rounded-full shadow-lg transition-all cursor-pointer group"
           onClick={() => setIsModalOpen(true)}
         >
-          <FaPlus className="text-white text-2xl" />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#ff007f] to-[#6a00f4] blur-md opacity-0 group-hover:opacity-70 transition-opacity"></div>
+          <FaPlus className="text-white text-2xl relative z-10" />
         </button>
       </div>
 
-      {/* Modal for new chat - with transparent background */}
+      {/* Modal for new chat - with backdrop blur and animation */}
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="pointer-events-auto bg-[#1a1b26] rounded-xl p-6 w-96 z-10 shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-[#c77dff]">Create New Chat</h3>
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-[#0d0f18]/60">
+          <div 
+            className="bg-[#1a1b26] rounded-xl border border-gray-700 shadow-2xl z-10 overflow-hidden transform transition-all"
+            style={{
+              animation: 'modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }}
+          >
+            {/* Modal header with gradient */}
+            <div className="bg-gradient-to-r from-[#240046] to-[#5a189a] px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">Create New Chat</h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-300 hover:text-white transition-colors"
               >
                 <FaTimes />
               </button>
             </div>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Chat Title
-              </label>
-              <input
-                type="text"
-                value={newChatTitle}
-                onChange={(e) => setNewChatTitle(e.target.value)}
-                placeholder="Enter a title for your chat"
-                className="w-full p-3 bg-[#2c2e3e] rounded-lg border border-gray-700 focus:border-[#c77dff] focus:outline-none focus:ring-1 focus:ring-[#c77dff] text-white"
-              />
+            <div className="p-6 w-96">
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Chat Title
+                </label>
+                <input
+                  type="text"
+                  value={newChatTitle}
+                  onChange={(e) => setNewChatTitle(e.target.value)}
+                  placeholder="Enter a title for your chat"
+                  className="w-full p-3 bg-[#2c2e3e] rounded-lg border border-gray-700 focus:border-[#c77dff] focus:outline-none focus:ring-1 focus:ring-[#c77dff] text-white"
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Category
+                </label>
+                <select
+                  className="w-full p-3 bg-[#2c2e3e] rounded-lg border border-gray-700 focus:border-[#c77dff] focus:outline-none focus:ring-1 focus:ring-[#c77dff] text-white"
+                >
+                  {categories.slice(1).map(category => (
+                    <option key={category} value={category} className="bg-[#2c2e3e] text-white">
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <button
+                onClick={handleNewChat}
+                className="w-full bg-gradient-to-r from-[#ff007f] to-[#6a00f4] py-3 rounded-lg font-medium text-white hover:from-[#d90429] hover:to-[#560bad] transition-all shadow-md hover:shadow-[0_0_15px_rgba(199,125,255,0.5)]"
+                disabled={!newChatTitle.trim()}
+              >
+                Start New Chat
+              </button>
             </div>
-            
-            <button
-              onClick={handleNewChat}
-              className="w-full bg-gradient-to-r from-[#ff007f] to-[#6a00f4] py-3 rounded-lg font-medium text-white hover:from-[#d90429] hover:to-[#560bad] transition-all"
-              disabled={!newChatTitle.trim()}
-            >
-              Start New Chat
-            </button>
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes modalAppear {
+          0% { opacity: 0; transform: scale(0.9); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(199, 125, 255, 0.7); }
+          70% { box-shadow: 0 0 0 10px rgba(199, 125, 255, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(199, 125, 255, 0); }
+        }
+      `}</style>
     </div>
   );
 };
