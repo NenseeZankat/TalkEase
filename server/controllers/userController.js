@@ -7,6 +7,7 @@ const d = 128; // Dimension (adjust based on embeddings)
 const index = new faiss.IndexFlatL2(d);
 
 // Register User
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password, embedding } = req.body;
@@ -17,24 +18,41 @@ export const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    user = new User({ name, email, password: hashedPassword, embedding });
+    // Default embedding to an empty array if not provided
+    const userEmbedding = embedding && Array.isArray(embedding) ? embedding : [];
+
+    user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      embedding: userEmbedding, // Use the default empty array if no embedding is provided
+    });
 
     await user.save();
 
-    if (embedding.length === d) {
-      index.add(new Float32Array(embedding));
+    // If embedding is provided and has a valid length, add it to the index
+    if (userEmbedding.length > 0) {
+      index.add(new Float32Array(userEmbedding));
     }
 
-    res.status(201).json({ msg: "User registered successfully" });
+    // Generate JWT Token
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(201).json({ msg: "User registered successfully", token, userId: user.id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+
+
 // Login User
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("Login request received with", email, password); // Debugging line
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: "Invalid credentials" });
@@ -42,11 +60,19 @@ export const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
+    // Generate JWT Token
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    res.json({ token, userId: user.id });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
