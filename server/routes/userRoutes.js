@@ -1,11 +1,11 @@
 import express from "express";
-import { saveChatHistory, semanticSearch, getChatHistory } from "../controllers/chatController.js";
+import { semanticSearch, getChatHistory } from "../controllers/chatController.js";
 import { registerUser, loginUser, findSimilarUsers, updateUser, getAllUsers, getUserById } from "../controllers/userController.js";
 
 const userrouter = express.Router();
 
 // Save chat history
-userrouter.post("/save-chat", saveChatHistory);
+// userrouter.post("/save-chat", saveChatHistory);
 
 // Semantic search for similar chats
 userrouter.post("/semantic-search", semanticSearch);

@@ -6,7 +6,7 @@ const chatHistorySchema = new mongoose.Schema(
     userMessage: { type: String, required: true },
     botResponse: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
-    embeddings: { type: [Number], required: true }, 
+    embeddings: { type: [Number]}, 
   },
   { timestamps: true }
 );

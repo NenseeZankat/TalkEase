@@ -1,7 +1,7 @@
 from llama_cpp import Llama
 
 # Load the GGUF model
-model_path = "C:/Users/ASUS/Desktop/TalkEase/model/save_model/llama-2-7b-chat.Q4_K_M.gguf"  # Update path if needed
+model_path = "./save_model/llama-2-7b-chat-compressed_Q4.gguf"  # Update path if needed
 print(f"🔄 Loading model: {model_path}")
 
 llm = Llama(model_path=model_path, n_ctx=2048, n_threads=8)  # Increased context for longer conversations

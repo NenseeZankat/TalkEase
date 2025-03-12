@@ -1,9 +1,9 @@
 import express from "express";
-import { saveChatHistory, semanticSearch, getChatHistory, generateResponse } from "../controllers/chatController.js";
+import { semanticSearch, getChatHistory, generateResponse } from "../controllers/chatController.js";
 
 const chatrouter = express.Router();
 
-chatrouter.post("/save-chat", saveChatHistory);
+// chatrouter.post("/save-chat", saveChatHistory);
 
 chatrouter.post("/semantic-search", semanticSearch);
 
