@@ -21,8 +21,22 @@ chat_history = []
 @app.post("/chat/")
 async def chat(request: ChatRequest):
     user_message = request.message.strip()
+    chat_history.append(f"User: {user_message}\nAssistant:")
 
-    response = "This is placeholder response" 
+    prompt = "\n".join(chat_history)
+
+    print("Generating response...")
+    output = llm(
+        prompt,
+        max_tokens=150,  
+        stop=["User:", "Assistant:"],  
+        temperature=0.7,
+    )
+
+    response = output["choices"][0]["text"].strip()
+    
+    chat_history.append(response)
+
     return {"response": response}
 
 @app.get("/")
