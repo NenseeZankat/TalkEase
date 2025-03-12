@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../App"; // Import the AuthContext
-
+import axios from "axios"; 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -119,34 +119,33 @@ const Login = () => {
       setError("Please fill in all fields.");
       return;
     }
-    
+  
+    console.log("Logging in with", email, password); // Debugging line
+  
     setLoading(true);
     setError("");
-    
+  
     try {
-      // Simulating API request delay
-      await new Promise((res) => setTimeout(res, 1000));
-      
-      // Mock authentication (replace with real auth logic)
-      if (email === "test@example.com" && password === "password123") {
-        // Generate a mock token
-        const mockToken = "mock-jwt-token-" + Date.now();
-        
-        // Use the login function from AuthContext
-        login(mockToken);
-        
-        // Redirect to chat page on success
-        navigate("/chat");
-      } else {
-        setError("Invalid email or password.");
-      }
+      const response = await axios.post("http://localhost:5000/api/user/login", {
+        email,
+        password,
+      });
+  
+      const { token, user } = response.data;
+      login(token);
+      localStorage.setItem("user", JSON.stringify(user));
+      navigate("/chat");
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      if (err.response) {
+        console.log(err.response); // Debugging line to check error
+        setError(err.response.data.msg || "Something went wrong. Please try again.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     }
-    
+  
     setLoading(false);
   };
-
   // Handle form submission on Enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
