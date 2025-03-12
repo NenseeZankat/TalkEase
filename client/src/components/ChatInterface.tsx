@@ -1,6 +1,7 @@
 import { FC, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaTimes, FaSearch, FaFilter } from "react-icons/fa";
+import { useTheme } from "../layout/ThemeProvider"; // Import the theme hook
 
 interface Chat {
   id: string;
@@ -16,6 +17,7 @@ const ChatInterface: FC = () => {
   const [activeFilter, setActiveFilter] = useState("All");
   const navigate = useNavigate();
   const headerRef = useRef<HTMLDivElement>(null);
+  const { themeStyles } = useTheme(); // Get theme styles from context
 
   // Sample chat data with unique IDs and more categories
   const recentChats: Chat[] = [
@@ -229,14 +231,13 @@ const ChatInterface: FC = () => {
     
     // Generate random gradient angles for variation
     const gradientAngle = Math.floor(Math.random() * 360);
-    const avatarGradient = `linear-gradient(${gradientAngle}deg, #7b2cbf, #ff007f)`;
     
     return (
       <div 
         className={`flex items-center p-5 rounded-xl transition-all duration-300 cursor-pointer relative overflow-hidden ${
           isHovered 
             ? 'transform scale-[1.02] z-10' 
-            : 'bg-[#1a1b26]/80 hover:bg-[#2c2e3e]/90'
+            : `${themeStyles.card} hover:${themeStyles.hoverEffect}`
         }`}
         onClick={() => handleChatClick(chat.id, chat.title)}
         onMouseEnter={() => setHoveredChat(chat.id)}
@@ -244,15 +245,16 @@ const ChatInterface: FC = () => {
       >
         {/* Background glow effect on hover */}
         {isHovered && (
-          <div className="absolute inset-0 bg-gradient-to-r from-[#240046] to-[#5a189a] opacity-70 border border-[#c77dff] rounded-xl shadow-[0_0_20px_rgba(199,125,255,0.5)] z-0"></div>
+          <div className={`absolute inset-0 ${themeStyles.card} opacity-70 rounded-xl shadow-lg z-0 `}></div>
         )}
         
         {/* Chat content */}
         <div className="relative z-10 flex items-center w-full">
           <div 
-            className="w-12 h-12 rounded-full mr-4 flex items-center justify-center transition-all shadow-lg"
+            // className="w-12 h-12 rounded-full mr-4 flex items-center justify-center transition-all shadow-lg bg-[#10010d]"
+            className="w-12 h-12 rounded-full mr-4 flex items-center justify-center transition-all shadow-lg border"
             style={{ 
-              background: avatarGradient,
+              background: isHovered ? themeStyles.userAvatar : themeStyles.aiAvatar,
               transform: isHovered ? 'scale(1.1)' : 'scale(1)'
             }}
           >
@@ -292,12 +294,12 @@ const ChatInterface: FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#0d0f18] text-white transition-all rounded-xl shadow-2xl">
+    <div className={`flex h-screen ${themeStyles.pageContainer} text-white transition-all rounded-xl shadow-2xl`}>
       {/* Main content */}
       <div className={`flex flex-col flex-grow transition-all duration-300 ${isModalOpen ? 'blur-sm' : ''}`}>
         <div 
           ref={headerRef}
-          className="header-gradient bg-gradient-to-br from-[#240046] via-[#5a189a] to-[#7b2cbf] p-16 rounded-b-3xl shadow-lg text-center relative overflow-hidden"
+          className={`header-gradient ${themeStyles.header} p-16 rounded-b-3xl shadow-lg text-center relative overflow-hidden`}
         >
           {/* Canvas for the header animation */}
           <canvas id="header-canvas" className="absolute inset-0 w-full h-full"></canvas>
@@ -309,7 +311,7 @@ const ChatInterface: FC = () => {
             
             {/* Search and filter bar */}
             <div className="mt-6 flex justify-center">
-              <div className="relative bg-[#1a1b26]/50 backdrop-blur-md rounded-l-full border-y border-l border-gray-700 w-64 flex items-center px-4">
+              <div className={`relative ${themeStyles.inputField} backdrop-blur-md rounded-l-full border-y border-l border-gray-700 w-64 flex items-center px-4`}>
                 <FaSearch className="text-gray-400 mr-2" />
                 <input
                   type="text"
@@ -319,7 +321,7 @@ const ChatInterface: FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="relative bg-[#1a1b26]/50 backdrop-blur-md rounded-r-full border-y border-r border-gray-700 px-4 flex items-center">
+              <div className={`relative ${themeStyles.inputField} backdrop-blur-md rounded-r-full border-y border-r border-gray-700 px-4 flex items-center`}>
                 <FaFilter className="text-gray-400 mr-2" />
                 <select 
                   className="bg-transparent border-none outline-none text-white py-2 appearance-none pr-8"
@@ -327,7 +329,7 @@ const ChatInterface: FC = () => {
                   onChange={(e) => setActiveFilter(e.target.value)}
                 >
                   {categories.map(category => (
-                    <option key={category} value={category} className="bg-[#1a1b26] text-white">
+                    <option key={category} value={category} className={`${themeStyles.inputField} text-white`}>
                       {category}
                     </option>
                   ))}
@@ -342,7 +344,7 @@ const ChatInterface: FC = () => {
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
               Recent ({filteredRecentChats.length})
-              <div className="absolute bottom-0 left-0 w-20 h-0.5 bg-gradient-to-r from-[#ff007f] to-[#7b2cbf]"></div>
+              <div className={`absolute bottom-0 left-0 w-20 h-0.5 ${themeStyles.divider}`}></div>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredRecentChats.map((chat) => (
@@ -360,7 +362,7 @@ const ChatInterface: FC = () => {
           <div>
             <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
               Past ({filteredPastChats.length})
-              <div className="absolute bottom-0 left-0 w-20 h-0.5 bg-gradient-to-r from-[#ff007f] to-[#7b2cbf]"></div>
+              <div className={`absolute bottom-0 left-0 w-20 h-0.5 ${themeStyles.divider}`}></div>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredPastChats.map((chat) => (
@@ -377,25 +379,25 @@ const ChatInterface: FC = () => {
 
         {/* New chat button with animated glow */}
         <button
-          className="fixed bottom-6 right-6 bg-gradient-to-r from-[#ff007f] to-[#6a00f4] p-5 rounded-full shadow-lg transition-all cursor-pointer group"
+          className={`fixed bottom-6 right-6 ${themeStyles.button} p-5 rounded-full shadow-lg transition-all cursor-pointer group`}
           onClick={() => setIsModalOpen(true)}
         >
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#ff007f] to-[#6a00f4] blur-md opacity-0 group-hover:opacity-70 transition-opacity"></div>
+          <div className={`absolute inset-0 rounded-full ${themeStyles.button} blur-md opacity-0 group-hover:opacity-70 transition-opacity`}></div>
           <FaPlus className="text-white text-2xl relative z-10" />
         </button>
       </div>
 
       {/* Modal for new chat - with backdrop blur and animation */}
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-[#0d0f18]/60">
+        <div className={`fixed inset-0 flex items-center justify-center z-50 ${themeStyles.modalBg}`}>
           <div 
-            className="bg-[#1a1b26] rounded-xl border border-gray-700 shadow-2xl z-10 overflow-hidden transform transition-all"
+            className={`${themeStyles.card} rounded-xl shadow-2xl z-10 overflow-hidden transform transition-all`}
             style={{
               animation: 'modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards'
             }}
           >
             {/* Modal header with gradient */}
-            <div className="bg-gradient-to-r from-[#240046] to-[#5a189a] px-6 py-4 flex justify-between items-center">
+            <div className={`${themeStyles.header} px-6 py-4 flex justify-between items-center`}>
               <h3 className="text-xl font-bold text-white">Create New Chat</h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
@@ -415,7 +417,7 @@ const ChatInterface: FC = () => {
                   value={newChatTitle}
                   onChange={(e) => setNewChatTitle(e.target.value)}
                   placeholder="Enter a title for your chat"
-                  className="w-full p-3 bg-[#2c2e3e] rounded-lg border border-gray-700 focus:border-[#c77dff] focus:outline-none focus:ring-1 focus:ring-[#c77dff] text-white"
+                  className={`w-full p-3 ${themeStyles.inputField} rounded-lg border border-gray-700 focus:outline-none focus:ring-1 text-white`}
                 />
               </div>
               
@@ -424,10 +426,10 @@ const ChatInterface: FC = () => {
                   Category
                 </label>
                 <select
-                  className="w-full p-3 bg-[#2c2e3e] rounded-lg border border-gray-700 focus:border-[#c77dff] focus:outline-none focus:ring-1 focus:ring-[#c77dff] text-white"
+                  className={`w-full p-3 ${themeStyles.inputField} rounded-lg border border-gray-700 focus:outline-none focus:ring-1 text-white`}
                 >
                   {categories.slice(1).map(category => (
-                    <option key={category} value={category} className="bg-[#2c2e3e] text-white">
+                    <option key={category} value={category} className={`${themeStyles.inputField} text-white`}>
                       {category}
                     </option>
                   ))}
@@ -436,7 +438,7 @@ const ChatInterface: FC = () => {
               
               <button
                 onClick={handleNewChat}
-                className="w-full bg-gradient-to-r from-[#ff007f] to-[#6a00f4] py-3 rounded-lg font-medium text-white hover:from-[#d90429] hover:to-[#560bad] transition-all shadow-md hover:shadow-[0_0_15px_rgba(199,125,255,0.5)]"
+                className={`w-full ${themeStyles.button} py-3 rounded-lg font-medium text-white transition-all shadow-md hover:shadow-lg`}
                 disabled={!newChatTitle.trim()}
               >
                 Start New Chat

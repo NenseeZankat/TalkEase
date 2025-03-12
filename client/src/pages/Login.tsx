@@ -1,7 +1,9 @@
 import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../App"; // Import the AuthContext
-import axios from "axios"; 
+import { useTheme } from "../layout/ThemeProvider"; // Update this path accordingly
+import axios from "axios";
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,6 +13,9 @@ const Login = () => {
   
   // Get the login function from AuthContext
   const { login } = useContext(AuthContext);
+  
+  // Get the theme styles
+  const { themeStyles } = useTheme();
 
   // Background animation effect
   useEffect(() => {
@@ -146,6 +151,7 @@ const Login = () => {
   
     setLoading(false);
   };
+  
   // Handle form submission on Enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -159,7 +165,7 @@ const Login = () => {
       <canvas id="background-canvas" className="absolute top-0 left-0 w-full h-full -z-10"></canvas>
       
       {/* Login form with glassmorphism effect */}
-      <div className="bg-[#161b22]/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-96 border border-gray-700/50">
+      <div className={`backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-96 border border-gray-700/50 ${themeStyles.card}`}>
         <h2 className="text-2xl font-semibold text-center text-white mb-6">Login</h2>
         
         {error && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
@@ -167,7 +173,7 @@ const Login = () => {
         <input
           type="email"
           placeholder="Email"
-          className="w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff]"
+          className={`w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff] ${themeStyles.inputField ? themeStyles.inputField.replace('bg-[#', 'bg-opacity-70 bg-[#') : ''}`}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -175,7 +181,7 @@ const Login = () => {
         <input
           type="password"
           placeholder="Password"
-          className="w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff]"
+          className={`w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff] ${themeStyles.inputField ? themeStyles.inputField.replace('bg-[#', 'bg-opacity-70 bg-[#') : ''}`}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -184,7 +190,7 @@ const Login = () => {
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-[#ff007f] to-[#6a00f4] text-white py-3 rounded-lg shadow-md hover:from-[#d90429] hover:to-[#560bad] transition-all disabled:opacity-70"
+          className={`w-full text-white py-3 rounded-lg shadow-md transition-all disabled:opacity-70 ${themeStyles.button || 'bg-gradient-to-r from-[#ff007f] to-[#6a00f4] hover:from-[#d90429] hover:to-[#560bad]'}`}
         >
           {loading ? "Logging in..." : "Login"}
         </button>

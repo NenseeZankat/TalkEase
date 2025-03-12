@@ -1,2 +1,4 @@
 saved_model
+llama-2-7b-chat.gguf
+llama-2-7b-chat.Q4_K_M.gguf
 __pycache__

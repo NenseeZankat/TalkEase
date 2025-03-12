@@ -1,7 +1,8 @@
 import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../App";
-import axios from 'axios'; // Move this line to the top
+import { useTheme } from "../layout/ThemeProvider"; // Added theme provider
+import axios from "axios";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -11,6 +12,9 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+  
+  // Get the theme styles (added from Login component)
+  const { themeStyles } = useTheme();
 
   // Background animation effect
   useEffect(() => {
@@ -125,6 +129,8 @@ const Signup = () => {
       return;
     }
 
+    console.log("Signing up with", name, email, password); // Added debugging like in Login
+
     setLoading(true);
     setError("");
 
@@ -138,14 +144,20 @@ const Signup = () => {
       });
 
       // Handle successful registration
-      const { token, userId } = response.data;
+      const { token, user } = response.data; // Changed to match login's structure
 
-      // Login the user (you can adjust this logic as needed)
-      login(token);  // Assuming `login` stores the JWT token
+      // Login the user and store user data in localStorage (like in Login)
+      login(token);
+      localStorage.setItem("user", JSON.stringify(user));
       navigate("/chat");  // Redirect to the chat page after successful signup
 
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      if (err.response) {
+        console.log(err.response); // Added better error logging from Login
+        setError(err.response.data.msg || "Something went wrong. Please try again.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
       console.error("Signup Error:", err);
     }
 
@@ -165,7 +177,7 @@ const Signup = () => {
       <canvas id="background-canvas" className="absolute top-0 left-0 w-full h-full -z-10"></canvas>
 
       {/* Signup form with glassmorphism effect */}
-      <div className="bg-[#161b22]/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-96 border border-gray-700/50">
+      <div className={`backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-96 border border-gray-700/50 ${themeStyles.card}`}>
         <h2 className="text-2xl font-semibold text-center text-white mb-6">Sign Up</h2>
 
         {error && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
@@ -173,7 +185,7 @@ const Signup = () => {
         <input
           type="text"
           placeholder="Name"
-          className="w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff]"
+          className={`w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff] ${themeStyles.inputField ? themeStyles.inputField.replace('bg-[#', 'bg-opacity-70 bg-[#') : ''}`}
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -181,7 +193,7 @@ const Signup = () => {
         <input
           type="email"
           placeholder="Email"
-          className="w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff]"
+          className={`w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff] ${themeStyles.inputField ? themeStyles.inputField.replace('bg-[#', 'bg-opacity-70 bg-[#') : ''}`}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -189,7 +201,7 @@ const Signup = () => {
         <input
           type="password"
           placeholder="Password (min. 6 chars)"
-          className="w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff]"
+          className={`w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff] ${themeStyles.inputField ? themeStyles.inputField.replace('bg-[#', 'bg-opacity-70 bg-[#') : ''}`}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -198,7 +210,7 @@ const Signup = () => {
         <button
           onClick={handleSignup}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-[#ff007f] to-[#6a00f4] text-white py-3 rounded-lg shadow-md hover:from-[#d90429] hover:to-[#560bad] transition-all disabled:opacity-70"
+          className={`w-full text-white py-3 rounded-lg shadow-md transition-all disabled:opacity-70 ${themeStyles.button || 'bg-gradient-to-r from-[#ff007f] to-[#6a00f4] hover:from-[#d90429] hover:to-[#560bad]'}`}
         >
           {loading ? "Signing up..." : "Sign Up"}
         </button>

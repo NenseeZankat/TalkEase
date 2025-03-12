@@ -3,6 +3,7 @@ import { useParams, useLocation, Link } from "react-router-dom";
 import { 
   FaArrowLeft, FaPaperPlane, FaSmile, FaTimes, FaEllipsisV, FaStar
 } from "react-icons/fa";
+import { useTheme } from "../layout/ThemeProvider";
 
 // Emoji data - in a real app you'd use a library or API
 const emojiCategories = [
@@ -53,12 +54,14 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeCategory, setActiveCategory] = useState(0);
   const [showQuickResponses, setShowQuickResponses] = useState(false);
-  const [theme, setTheme] = useState<"purple" | "cosmic" | "night">("cosmic");
   const [showOptions, setShowOptions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+  
+  // Use the theme context instead of local state
+  const { theme, setTheme, themeStyles } = useTheme();
 
   // Function to scroll to bottom
   const scrollToBottom = () => {
@@ -84,66 +87,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [emojiPickerRef, optionsRef]);
-
-  // Get color schemes based on selected theme
-  const getThemeStyles = () => {
-    switch(theme) {
-      case "purple":
-        return {
-          background: "bg-gradient-to-b from-[#0f0f1a] via-[#1a0033] to-[#240046]",
-          header: "bg-gradient-to-r from-[#240046] to-[#5a189a]",
-          userMessage: "bg-gradient-to-r from-[#7209b7] to-[#560bad]",
-          aiMessage: "bg-gradient-to-r from-[#2c2c3e] to-[#3a2f5b]",
-          inputArea: "bg-gradient-to-b from-[#1a0033] to-[#240046]",
-          inputField: "bg-[#1a1b26]",
-          button: "bg-gradient-to-r from-[#ff007f] to-[#6a00f4] hover:from-[#d90429] hover:to-[#560bad]",
-          divider: "bg-[#3c096c]",
-          userAvatar: "bg-gradient-to-r from-[#c77dff] to-[#e0aaff]",
-          aiAvatar: "bg-gradient-to-r from-[#7209b7] to-[#560bad]"
-        };
-      case "cosmic":
-        return {
-          background: "bg-gradient-to-b from-[#03071e] via-[#240046] to-[#3a0ca3]",
-          header: "bg-gradient-to-r from-[#3a0ca3] to-[#7209b7]",
-          userMessage: "bg-gradient-to-r from-[#f72585] to-[#b5179e]",
-          aiMessage: "bg-gradient-to-r from-[#3a0ca3] to-[#4361ee]",
-          inputArea: "bg-gradient-to-b from-[#240046] to-[#3a0ca3]",
-          inputField: "bg-[#03071e]",
-          button: "bg-gradient-to-r from-[#f72585] to-[#7209b7] hover:from-[#b5179e] hover:to-[#560bad]",
-          divider: "bg-[#4361ee]",
-          userAvatar: "bg-gradient-to-r from-[#f72585] to-[#ff9e00]",
-          aiAvatar: "bg-gradient-to-r from-[#4361ee] to-[#3a0ca3]"
-        };
-      case "night":
-        return {
-          background: "bg-gradient-to-b from-[#050a18] via-[#041833] to-[#04293a]",
-          header: "bg-gradient-to-r from-[#04293a] to-[#064663]",
-          userMessage: "bg-gradient-to-r from-[#0077b6] to-[#0096c7]",
-          aiMessage: "bg-gradient-to-r from-[#064663] to-[#04293a]",
-          inputArea: "bg-gradient-to-b from-[#041833] to-[#04293a]",
-          inputField: "bg-[#050a18]",
-          button: "bg-gradient-to-r from-[#0077b6] to-[#00b4d8] hover:from-[#0096c7] hover:to-[#48cae4]",
-          divider: "bg-[#064663]",
-          userAvatar: "bg-gradient-to-r from-[#0096c7] to-[#48cae4]",
-          aiAvatar: "bg-gradient-to-r from-[#064663] to-[#0077b6]"
-        };
-      default:
-        return {
-          background: "bg-gradient-to-b from-[#0f0f1a] via-[#1a0033] to-[#240046]",
-          header: "bg-gradient-to-r from-[#240046] to-[#5a189a]",
-          userMessage: "bg-gradient-to-r from-[#7209b7] to-[#560bad]",
-          aiMessage: "bg-gradient-to-r from-[#2c2c3e] to-[#3a2f5b]",
-          inputArea: "bg-gradient-to-b from-[#1a0033] to-[#240046]",
-          inputField: "bg-[#1a1b26]",
-          button: "bg-gradient-to-r from-[#ff007f] to-[#6a00f4] hover:from-[#d90429] hover:to-[#560bad]",
-          divider: "bg-[#3c096c]",
-          userAvatar: "bg-gradient-to-r from-[#c77dff] to-[#e0aaff]",
-          aiAvatar: "bg-gradient-to-r from-[#7209b7] to-[#560bad]"
-        };
-    }
-  };
-
-  const themeStyles = getThemeStyles();
 
   // Get chat title from location state (passed during navigation)
   useEffect(() => {
@@ -296,7 +239,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     );
   };
 
-  // Change theme
+  // Change theme using the context
   const changeTheme = (newTheme: "purple" | "cosmic" | "night") => {
     setTheme(newTheme);
     setShowOptions(false);
@@ -340,9 +283,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
               ref={optionsRef}
               className="absolute top-16 right-4 w-48 bg-black/70 backdrop-blur-lg rounded-xl shadow-xl border border-white/20 overflow-hidden z-20"
             >
-              {/* <div className="p-3 border-b border-white/10">
-                <h3 className="text-white text-sm font-medium">Chat Settings</h3>
-              </div> */}
               <div className="p-2">
                 <h4 className="text-xs text-white/60 px-2 py-1">Theme</h4>
                 <button 
@@ -496,17 +436,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       <div className={`p-4 ${themeStyles.inputArea} shadow-inner border-t border-white/10 relative transition-colors duration-500`}>
         {/* Input toolbar */}
         <div className="flex justify-between items-center mb-2 px-2">
-          {/* <div className="flex space-x-2">
-            <button className="p-1.5 text-purple-300/70 hover:text-purple-300/100 hover:bg-white/5 rounded-full transition-all">
-              <FaImage className="text-sm" />
-            </button>
-            <button className="p-1.5 text-purple-300/70 hover:text-purple-300/100 hover:bg-white/5 rounded-full transition-all">
-              <FaMicrophone className="text-sm" />
-            </button>
-            <button className="p-1.5 text-purple-300/70 hover:text-purple-300/100 hover:bg-white/5 rounded-full transition-all">
-              <FaVideo className="text-sm" />
-            </button>
-          </div> */}
           <button 
             className="p-1.5 text-purple-300/70 hover:text-purple-300/100 hover:bg-white/5 rounded-full transition-all"
             onClick={toggleQuickResponses}
@@ -517,10 +446,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
         
         {/* Input field */}
         <div className={`flex items-center ${themeStyles.inputField} rounded-full shadow-lg backdrop-blur-sm border border-white/10`}>
-          {/* <button className="p-3 text-purple-300/70 hover:text-purple-300/100 transition-colors">
-            <FaPaperclip className="text-lg" />
-          </button> */}
-          
           <input
             ref={inputRef}
             type="text"
@@ -605,20 +530,20 @@ const ChatDetail: FC<ChatDetailProps> = () => {
               <div className="flex space-x-1">
                 {["😊", "👍", "❤️", "😂", "🙏"].map((emoji, index) => (
                   <button
-                  key={index}
-                  onClick={() => addEmoji(emoji)}
-                  className="w-6 h-6 flex items-center justify-center text-lg hover:bg-white/10 rounded transition-colors"
-                >
-                  {emoji}
-                </button>
-              ))}
+                    key={index}
+                    onClick={() => addEmoji(emoji)}
+                    className="w-6 h-6 flex items-center justify-center text-lg hover:bg-white/10 rounded transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default ChatDetail;
