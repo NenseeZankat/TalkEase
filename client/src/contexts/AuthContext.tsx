@@ -1,17 +1,20 @@
 import { createContext, useState, useEffect, ReactNode, useContext } from "react";
+import axios from "axios";
 
 // Define the auth context type
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (token: string) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  register: (email: string, password: string) => Promise<void>;
 }
 
 // Create AuthContext with default values
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  login: () => {},
+  login: async () => {},
   logout: () => {},
+  register: async () => {},
 });
 
 // AuthProvider props type
@@ -30,18 +33,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
-  const login = (token: string) => {
-    localStorage.setItem("token", token);
-    setIsAuthenticated(true);
+  // Login function with API call
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await axios.post("/api/login", { email, password }); // Replace with your API endpoint
+      const token = response.data.token;
+      localStorage.setItem("token", token);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw new Error("Login failed");
+    }
   };
 
+  // Register function with API call
+  const register = async (email: string, password: string) => {
+    try {
+      const response = await axios.post("/api/register", { email, password }); // Replace with your API endpoint
+      const token = response.data.token;
+      localStorage.setItem("token", token);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error("Registration failed:", error);
+      throw new Error("Registration failed");
+    }
+  };
+
+  // Logout function
   const logout = () => {
     localStorage.removeItem("token");
     setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
