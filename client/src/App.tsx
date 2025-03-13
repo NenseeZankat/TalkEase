@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import { useState, createContext, useContext, useEffect, ReactNode } from "react";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
@@ -30,7 +30,7 @@ interface AuthProviderProps {
 
 function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  
+
   // Check if user is logged in on initial load
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -56,11 +56,23 @@ function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
+// Private Route Component
+const PrivateRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+
+  if (!isAuthenticated) {
+    // Redirect to login page if not authenticated
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
+};
+
 // Theme Selector Component
 const ThemeSelector = () => {
   const { theme, setTheme } = useTheme();
   const [showThemeOptions, setShowThemeOptions] = useState(false);
-  
+
   return (
     <div className="relative">
       <button 
@@ -108,7 +120,6 @@ function AppContent() {
   return (
     <Router>
       <div className={`flex h-screen relative ${themeStyles.background} transition-all duration-500`}>
-        {/* Main Content with blur effect when sidebar is open */}
         <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? "filter blur-sm" : ""}`}>
           <div className="fixed top-4 left-4 z-30">
             <button 
@@ -121,14 +132,20 @@ function AppContent() {
           
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/chat/:chatId" element={<ChatDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            {/* Protecting the /chat and /home routes */}
+            <Route 
+              path="/chat" 
+              element={<PrivateRoute><Chat /></PrivateRoute>} 
+            />
+            <Route 
+              path="/chat/:chatId" 
+              element={<PrivateRoute><ChatDetail /></PrivateRoute>} 
+            />
           </Routes>
         </div>
         
-        {/* Sidebar */}
         <div 
           className={`fixed top-0 left-0 h-full ${themeStyles.sidebar} text-white p-5 flex flex-col space-y-6 shadow-lg transition-all duration-300 z-20 backdrop-blur-sm border-r border-white/10 ${
             isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"
@@ -195,8 +212,7 @@ function AppContent() {
             </nav>
           </div>
         </div>
-        
-        {/* Transparent overlay to handle click outside to close sidebar */}
+
         {isSidebarOpen && (
           <div 
             className="fixed inset-0 z-10 bg-black/20 backdrop-blur-sm"

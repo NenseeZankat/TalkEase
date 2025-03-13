@@ -10,35 +10,32 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  
+
   // Get the login function from AuthContext
   const { login } = useContext(AuthContext);
-  
+
   // Get the theme styles
   const { themeStyles } = useTheme();
 
   // Background animation effect
   useEffect(() => {
-    // Create canvas for particle animation
     const canvas = document.getElementById('background-canvas') as HTMLCanvasElement;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
-    // Set canvas dimensions
+
     const setCanvasDimensions = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
-    
+
     setCanvasDimensions();
     window.addEventListener('resize', setCanvasDimensions);
-    
-    // Particle properties
+
     const particlesArray: Particle[] = [];
     const numberOfParticles = 100;
-    
+
     class Particle {
       x: number;
       y: number;
@@ -46,23 +43,21 @@ const Login = () => {
       speedX: number;
       speedY: number;
       color: string;
-      
+
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
         this.size = Math.random() * 3 + 1;
         this.speedX = Math.random() * 0.5 - 0.25;
         this.speedY = Math.random() * 0.5 - 0.25;
-        // Random color from the gradient palette
         const colors = ['#ff007f', '#c77dff', '#6a00f4', '#560bad'];
         this.color = colors[Math.floor(Math.random() * colors.length)];
       }
-      
+
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
-        
-        // Bounce off edges
+
         if (this.x > canvas.width || this.x < 0) {
           this.speedX = -this.speedX;
         }
@@ -70,7 +65,7 @@ const Login = () => {
           this.speedY = -this.speedY;
         }
       }
-      
+
       draw() {
         if (!ctx) return;
         ctx.fillStyle = this.color;
@@ -80,40 +75,35 @@ const Login = () => {
         ctx.fill();
       }
     }
-    
-    // Create particles
+
     const init = () => {
       for (let i = 0; i < numberOfParticles; i++) {
         particlesArray.push(new Particle());
       }
     };
-    
-    // Animation loop
+
     const animate = () => {
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw gradient background
+
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, 'rgba(13, 15, 24, 1)');
       gradient.addColorStop(0.5, 'rgba(22, 27, 34, 1)');
       gradient.addColorStop(1, 'rgba(13, 15, 24, 1)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Update and draw particles
+
       for (let i = 0; i < particlesArray.length; i++) {
         particlesArray[i].update();
         particlesArray[i].draw();
       }
-      
+
       requestAnimationFrame(animate);
     };
-    
+
     init();
     animate();
-    
-    // Cleanup
+
     return () => {
       window.removeEventListener('resize', setCanvasDimensions);
     };
@@ -124,35 +114,37 @@ const Login = () => {
       setError("Please fill in all fields.");
       return;
     }
-  
-    console.log("Logging in with", email, password); // Debugging line
-  
+
     setLoading(true);
     setError("");
-  
+
     try {
       const response = await axios.post("http://localhost:5000/api/user/login", {
         email,
         password,
       });
-  
+
       const { token, user } = response.data;
+
+      // Call the login function from AuthContext to update the auth state
       login(token);
+
+      // Store the token and user in localStorage (optional)
       localStorage.setItem("user", JSON.stringify(user));
+
+      // Redirect to the chat page or desired page
       navigate("/chat");
     } catch (err) {
       if (err.response) {
-        console.log(err.response); // Debugging line to check error
         setError(err.response.data.msg || "Something went wrong. Please try again.");
       } else {
         setError("Something went wrong. Please try again.");
       }
     }
-  
+
     setLoading(false);
   };
-  
-  // Handle form submission on Enter key
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleLogin();
@@ -161,10 +153,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background canvas */}
       <canvas id="background-canvas" className="absolute top-0 left-0 w-full h-full -z-10"></canvas>
       
-      {/* Login form with glassmorphism effect */}
       <div className={`backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-96 border border-gray-700/50 ${themeStyles.card}`}>
         <h2 className="text-2xl font-semibold text-center text-white mb-6">Login</h2>
         

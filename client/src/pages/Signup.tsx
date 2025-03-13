@@ -10,6 +10,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false); // State for password visibility
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
   
@@ -118,9 +119,17 @@ const Signup = () => {
     };
   }, []);
 
+  // Handle email validation
+  const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
+
   const handleSignup = async () => {
     if (!name || !email || !password) {
       setError("All fields are required.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
       return;
     }
 
@@ -171,6 +180,11 @@ const Signup = () => {
     }
   };
 
+  // Toggle password visibility
+  const togglePasswordVisibility = () => {
+    setPasswordVisible((prevState) => !prevState);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background canvas */}
@@ -198,14 +212,23 @@ const Signup = () => {
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <input
-          type="password"
-          placeholder="Password (min. 6 chars)"
-          className={`w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff] ${themeStyles.inputField ? themeStyles.inputField.replace('bg-[#', 'bg-opacity-70 bg-[#') : ''}`}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
+        <div className="relative">
+          <input
+            type={passwordVisible ? "text" : "password"}
+            placeholder="Password (min. 6 chars)"
+            className={`w-full p-3 mb-4 border border-gray-700 rounded-lg bg-gray-800/70 text-white focus:outline-none focus:ring-2 focus:ring-[#c77dff] ${themeStyles.inputField ? themeStyles.inputField.replace('bg-[#', 'bg-opacity-70 bg-[#') : ''}`}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            type="button"
+            onClick={togglePasswordVisibility}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#c77dff]"
+          >
+            {passwordVisible ? "Hide" : "Show"}
+          </button>
+        </div>
 
         <button
           onClick={handleSignup}
