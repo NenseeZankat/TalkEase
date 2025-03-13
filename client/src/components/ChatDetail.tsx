@@ -4,6 +4,7 @@ import {
   FaArrowLeft, FaPaperPlane, FaSmile, FaTimes, FaEllipsisV, FaStar
 } from "react-icons/fa";
 import { useTheme } from "../layout/ThemeProvider";
+import axios from "axios";
 
 // Emoji data - in a real app you'd use a library or API
 const emojiCategories = [
@@ -26,12 +27,12 @@ const emojiCategories = [
 ];
 
 // Quick response suggestions
-const quickResponses = [
-  "Thanks for your help! 👍",
-  "I'll think about it 🤔",
-  "Can you explain more? 🧐",
-  "That's exactly what I needed! ✨"
-];
+// const quickResponses = [
+//   "Thanks for your help! 👍",
+//   "I'll think about it 🤔",
+//   "Can you explain more? 🧐",
+//   "That's exactly what I needed! ✨"
+// ];
 
 interface Message {
   id: string;
@@ -42,8 +43,10 @@ interface Message {
   isNew?: boolean;
 }
 
-interface ChatDetailProps {}
+interface ChatDetailProps {
+  chatId: string;
 
+}
 const ChatDetail: FC<ChatDetailProps> = () => {
   const { chatId } = useParams<{ chatId: string }>();
   const location = useLocation();
@@ -60,6 +63,8 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
   
+  // User ID - in a real app, this would come from authentication
+  const userId = "67d053a0b18cab97965e65d0";  
   // Use the theme context instead of local state
   const { theme, setTheme, themeStyles } = useTheme();
 
@@ -88,14 +93,14 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     };
   }, [emojiPickerRef, optionsRef]);
 
-  // Get chat title from location state (passed during navigation)
+  // Fetch chat history on component mount
   useEffect(() => {
     if (location.state && location.state.title) {
       setChatTitle(location.state.title);
     }
     
-    // In a real app, you would fetch the chat messages based on chatId
-    // This is just a mock example
+    // In a real app, you would fetch the chat history based on chatId and userId
+    // This is just to initialize with some mock data
     const mockMessages: Message[] = [
       {
         id: "msg1",
@@ -110,34 +115,50 @@ const ChatDetail: FC<ChatDetailProps> = () => {
         sender: "ai",
         timestamp: new Date(Date.now() - 3540000),
         reactions: ["👍"]
-      },
-      {
-        id: "msg3",
-        content: "It's just been a rough day. I can't seem to focus on anything. 😞",
-        sender: "user",
-        timestamp: new Date(Date.now() - 3500000)
-      },
-      {
-        id: "msg4",
-        content: "This is a very short message. 👍",
-        sender: "ai",
-        timestamp: new Date(Date.now() - 3400000)
-      },
-      {
-        id: "msg5",
-        content: "This is a much longer message that should take up more space in the chat window. When messages are longer like this one, the bubble should expand to accommodate the additional text content while still maintaining a reasonable maximum width. 😊",
-        sender: "user",
-        timestamp: new Date(Date.now() - 3300000)
       }
     ];
     
     setMessages(mockMessages);
+    
+    // Fetch chat history from API - commented out for now
+     fetchChatHistory("1", userId);
     
     // Focus input on load
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
   }, [chatId, location.state]);
+
+  // Fetch chat history from API
+  const fetchChatHistory = async (chatId: string, userId: string) => {
+    try {
+      // Replace with your actual endpoint
+      const response = await axios.get(`http://localhost:5000/api/chat//history/${userId}`, {
+        params: { chatId, userId }
+      });
+      
+      if (response.data && response.data.history) {
+        const formattedMessages = response.data.history.map((item: any) => ({
+          id: item._id || `hist-${Math.random().toString(36).substring(2, 9)}`,
+          content: item.userMessage,
+          sender: "user",
+          timestamp: new Date(item.timestamp || Date.now()),
+          reactions: []
+        })).concat(response.data.history.map((item: any) => ({
+          id: `ai-${item._id || Math.random().toString(36).substring(2, 9)}`,
+          content: item.botResponse,
+          sender: "ai",
+          timestamp: new Date((item.timestamp || Date.now()) + 1000), // Add 1 second to ensure proper ordering
+          reactions: []
+        })));
+        
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      // Fallback to mock messages if API fails
+    }
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -154,10 +175,10 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     return "w-auto max-w-lg"; // Very long messages
   };
 
-  // Send a new message
-  const handleSendMessage = () => {
+  // Send a new message via API
+  const handleSendMessage = async () => {
     if (newMessage.trim()) {
-      // Add user message
+      // Add user message to UI immediately
       const userMessage: Message = {
         id: `user-${Date.now()}`,
         content: newMessage,
@@ -167,6 +188,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       };
       
       setMessages([...messages, userMessage]);
+      const userMessageContent = newMessage;
       setNewMessage("");
       setShowEmojiPicker(false);
       setShowQuickResponses(false);
@@ -174,20 +196,44 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       // Show typing indicator
       setIsTyping(true);
       
-      // Simulate AI response (in a real app, this would be an API call)
-      setTimeout(() => {
+      try {
+        // Send message to API
+        const response = await axios.post("http://localhost:8000/chat/", {
+          userId: userId,
+          userMessage: userMessageContent
+        });
+        
+        // Handle the response
+        if (response.data && response.data.botResponse) {
+          setIsTyping(false);
+          
+          const aiMessage: Message = {
+            id: `ai-${Date.now()}`,
+            content: response.data.botResponse,
+            sender: "ai",
+            timestamp: new Date(),
+            isNew: true
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+        } else {
+          throw new Error("Invalid API response format");
+        }
+      } catch (error) {
+        console.error("Error sending message to API:", error);
         setIsTyping(false);
         
-        const aiMessage: Message = {
+        // Fallback response in case of API error
+        const errorMessage: Message = {
           id: `ai-${Date.now()}`,
-          content: "I understand how you feel. Let's talk more about what's on your mind. 💭",
+          content: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
           sender: "ai",
           timestamp: new Date(),
           isNew: true
         };
         
-        setMessages(prev => [...prev, aiMessage]);
-      }, 1500);
+        setMessages(prev => [...prev, errorMessage]);
+      }
     }
   };
 

@@ -11,4 +11,5 @@ chatrouter.get("/history/:userId", getChatHistory);
 
 chatrouter.post("/generate-response", generateResponse);
 
+
 export default chatrouter;
