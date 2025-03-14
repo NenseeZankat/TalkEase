@@ -195,7 +195,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       
       // Show typing indicator
       setIsTyping(true);
-      
       try {
         // Send message to API
         const response = await axios.post("http://localhost:8000/chat/", {
