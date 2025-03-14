@@ -2,6 +2,9 @@
 
 TalkEase is an AI-powered chatbot built using LLaMA 2 with GPTQ optimization. 🚀
 
+## Model details 
+https://github.com/neha089/MindMitra
+
 ## Features
 - Supports both **GPU** (CUDA) and **CPU** execution.
 - Provides **streaming responses** using FastAPI.
