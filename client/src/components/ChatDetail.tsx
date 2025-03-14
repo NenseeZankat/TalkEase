@@ -27,12 +27,12 @@ const emojiCategories = [
 ];
 
 // Quick response suggestions
-// const quickResponses = [
-//   "Thanks for your help! 👍",
-//   "I'll think about it 🤔",
-//   "Can you explain more? 🧐",
-//   "That's exactly what I needed! ✨"
-// ];
+const quickResponses = [
+  "Thanks for your help! 👍",
+  "I'll think about it 🤔",
+  "Can you explain more? 🧐",
+  "That's exactly what I needed! ✨"
+];
 
 interface Message {
   id: string;
@@ -43,10 +43,8 @@ interface Message {
   isNew?: boolean;
 }
 
-interface ChatDetailProps {
-  chatId: string;
+interface ChatDetailProps {}
 
-}
 const ChatDetail: FC<ChatDetailProps> = () => {
   const { chatId } = useParams<{ chatId: string }>();
   const location = useLocation();
@@ -63,8 +61,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
   
-  // User ID - in a real app, this would come from authentication
-  const userId = "67d053a0b18cab97965e65d0";  
   // Use the theme context instead of local state
   const { theme, setTheme, themeStyles } = useTheme();
 
@@ -93,14 +89,14 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     };
   }, [emojiPickerRef, optionsRef]);
 
-  // Fetch chat history on component mount
+  // Get chat title from location state (passed during navigation)
   useEffect(() => {
     if (location.state && location.state.title) {
       setChatTitle(location.state.title);
     }
     
-    // In a real app, you would fetch the chat history based on chatId and userId
-    // This is just to initialize with some mock data
+    // In a real app, you would fetch the chat messages based on chatId
+    // This is just a mock example
     const mockMessages: Message[] = [
       {
         id: "msg1",
@@ -115,50 +111,34 @@ const ChatDetail: FC<ChatDetailProps> = () => {
         sender: "ai",
         timestamp: new Date(Date.now() - 3540000),
         reactions: ["👍"]
+      },
+      {
+        id: "msg3",
+        content: "It's just been a rough day. I can't seem to focus on anything. 😞",
+        sender: "user",
+        timestamp: new Date(Date.now() - 3500000)
+      },
+      {
+        id: "msg4",
+        content: "This is a very short message. 👍",
+        sender: "ai",
+        timestamp: new Date(Date.now() - 3400000)
+      },
+      {
+        id: "msg5",
+        content: "This is a much longer message that should take up more space in the chat window. When messages are longer like this one, the bubble should expand to accommodate the additional text content while still maintaining a reasonable maximum width. 😊",
+        sender: "user",
+        timestamp: new Date(Date.now() - 3300000)
       }
     ];
     
     setMessages(mockMessages);
-    
-    // Fetch chat history from API - commented out for now
-     fetchChatHistory("1", userId);
     
     // Focus input on load
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
   }, [chatId, location.state]);
-
-  // Fetch chat history from API
-  const fetchChatHistory = async (chatId: string, userId: string) => {
-    try {
-      // Replace with your actual endpoint
-      const response = await axios.get(`http://localhost:5000/api/chat//history/${userId}`, {
-        params: { chatId, userId }
-      });
-      
-      if (response.data && response.data.history) {
-        const formattedMessages = response.data.history.map((item: any) => ({
-          id: item._id || `hist-${Math.random().toString(36).substring(2, 9)}`,
-          content: item.userMessage,
-          sender: "user",
-          timestamp: new Date(item.timestamp || Date.now()),
-          reactions: []
-        })).concat(response.data.history.map((item: any) => ({
-          id: `ai-${item._id || Math.random().toString(36).substring(2, 9)}`,
-          content: item.botResponse,
-          sender: "ai",
-          timestamp: new Date((item.timestamp || Date.now()) + 1000), // Add 1 second to ensure proper ordering
-          reactions: []
-        })));
-        
-        setMessages(formattedMessages);
-      }
-    } catch (error) {
-      console.error("Error fetching chat history:", error);
-      // Fallback to mock messages if API fails
-    }
-  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -175,66 +155,59 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     return "w-auto max-w-lg"; // Very long messages
   };
 
-  // Send a new message via API
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (newMessage: string) => {
+    console.log("newmessage: ", newMessage);
+  
     if (newMessage.trim()) {
-      // Add user message to UI immediately
+      // Add user message
       const userMessage: Message = {
         id: `user-${Date.now()}`,
         content: newMessage,
         sender: "user",
         timestamp: new Date(),
-        isNew: true
+        isNew: true,
       };
-      
+  
       setMessages([...messages, userMessage]);
-      const userMessageContent = newMessage;
       setNewMessage("");
       setShowEmojiPicker(false);
       setShowQuickResponses(false);
-      
-      // Show typing indicator
-      setIsTyping(true);
+      setIsTyping(true); // Show typing indicator
+  
       try {
-        // Send message to API
-        const response = await axios.post("http://localhost:8000/chat/", {
-          userId: userId,
-          userMessage: userMessageContent
+        // Make API call to get AI response
+        const response = await axios.post("http://localhost:5000/api/chat/generate-response", {
+          userMessage: newMessage,
         });
-        
-        // Handle the response
-        if (response.data && response.data.botResponse) {
-          setIsTyping(false);
-          
-          const aiMessage: Message = {
-            id: `ai-${Date.now()}`,
-            content: response.data.botResponse,
-            sender: "ai",
-            timestamp: new Date(),
-            isNew: true
-          };
-          
-          setMessages(prev => [...prev, aiMessage]);
-        } else {
-          throw new Error("Invalid API response format");
-        }
-      } catch (error) {
-        console.error("Error sending message to API:", error);
-        setIsTyping(false);
-        
-        // Fallback response in case of API error
-        const errorMessage: Message = {
+  
+        const aiMessage: Message = {
           id: `ai-${Date.now()}`,
-          content: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+          content: response.data.botResponse, // Assuming API returns { reply: "AI message" }
           sender: "ai",
           timestamp: new Date(),
-          isNew: true
+          isNew: true,
         };
-        
-        setMessages(prev => [...prev, errorMessage]);
+
+  
+        setMessages((prev) => [...prev, aiMessage]);
+      } catch (error) {
+        console.error("Error fetching AI response:", error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            content: "Sorry, I couldn't process your request. Please try again later.",
+            sender: "ai",
+            timestamp: new Date(),
+            isNew: true,
+          },
+        ]);
+      } finally {
+        setIsTyping(false);
       }
     }
   };
+
 
   // Handle quick response selection
   const handleQuickResponse = (response: string) => {
@@ -498,7 +471,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="  Type a message..."
             className="flex-1 p-3 bg-transparent border-none focus:outline-none text-white placeholder-gray-400"
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(newMessage)}
           />
           
           <button 
@@ -509,7 +482,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
           </button>
           
           <button
-            onClick={handleSendMessage}
+            onClick={() => handleSendMessage(newMessage)}
             disabled={!newMessage.trim()}
             className={`ml-1 mr-1 ${themeStyles.button} p-3 rounded-full text-white transition-all disabled:opacity-50 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-xl`}
           >
