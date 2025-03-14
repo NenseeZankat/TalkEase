@@ -8,8 +8,7 @@ const index = new faiss.IndexFlatL2(d);
 export const generateResponse = async (req, res) => {
     try {
         console.log(req.body);
-        const { userMessage } = req.body;
-        const userId = "67d0f62f2ccabd9b4858e279";
+        const { userMessage, userId } = req.body;
 
         // if (embedding==undefined && embedding.length !== d) {
         //     return res.status(400).json({ msg: "Invalid embedding size" });

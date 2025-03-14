@@ -56,10 +56,14 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [showQuickResponses, setShowQuickResponses] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [userId, setUserId] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+
+  const userDetails = localStorage.getItem("user");
+
   
   // Use the theme context instead of local state
   const { theme, setTheme, themeStyles } = useTheme();
@@ -156,7 +160,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   };
 
   const handleSendMessage = async (newMessage: string) => {
-    console.log("newmessage: ", newMessage);
+    // console.log("newmessage: ", newMessage);
   
     if (newMessage.trim()) {
       // Add user message
@@ -167,6 +171,16 @@ const ChatDetail: FC<ChatDetailProps> = () => {
         timestamp: new Date(),
         isNew: true,
       };
+
+      if (userDetails) {
+        const user = JSON.parse(userDetails);
+        const userId = user.id;
+        // console.log(user);
+        setUserId(userId);
+      } else {
+        console.log("No user details found in localStorage.");
+      }
+    
   
       setMessages([...messages, userMessage]);
       setNewMessage("");
@@ -178,6 +192,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
         // Make API call to get AI response
         const response = await axios.post("http://localhost:5000/api/chat/generate-response", {
           userMessage: newMessage,
+          userId: userId
         });
   
         const aiMessage: Message = {
