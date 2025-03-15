@@ -51,7 +51,7 @@ async def chat(request: ChatRequest):
     tts.save(audio_path)
 
     if response_type == "audio":
-        return {"audio_url": f"/static/{audio_path}"}
+        return {"response":response, "audio_url": f"/static/{audio_path}"}
 
     return {"response": response, "audio_url": f"/static/{audio_path}"}
 
