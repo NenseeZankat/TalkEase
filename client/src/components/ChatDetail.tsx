@@ -1,63 +1,44 @@
+// src/components/chat/ChatDetail.tsx
 import { FC, useEffect, useState, useRef } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
-import { 
-  FaArrowLeft, FaPaperPlane, FaSmile, FaTimes, FaEllipsisV, FaStar, 
-  FaMicrophone, FaStop, FaVolumeUp, FaVolumeMute, FaHeadphones, 
-  FaPlay, FaPause
-} from "react-icons/fa";
+import { FaArrowLeft, FaEllipsisV, FaHeadphones } from "react-icons/fa";
 import { useTheme } from "../layout/ThemeProvider";
 import axios from "axios";
-import { emojiCategories } from "../assets/emojiCategories";
 import { Message } from "../models/Message";
 import { ChatDetailProps } from "../models/ChatDetailProps";
 import { mockMessages } from "../dummydata/mockMessages";
 
-// Quick response suggestions
-const quickResponses = [
-  "Thanks for your help! 👍",
-  "I'll think about it 🤔",
-  "Can you explain more? 🧐",
-  "That's exactly what I needed! ✨"
-];
-
-
-
+// Import components
+import ChatHeader from "./ChatHeader";
+import MessageList from "./MessageList";
+import ChatInput from "./ChatInput";
+import AudioOptionsMenu from "./menus/AudioOptionsMenu";
+import ThemeOptionsMenu from "./menus/ThemeOptionsMenu";
 
 const ChatDetail: FC<ChatDetailProps> = () => {
   const { chatId } = useParams<{ chatId: string }>();
   const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
   const [chatTitle, setChatTitle] = useState("Chat");
   const [isTyping, setIsTyping] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [activeCategory, setActiveCategory] = useState(0);
-  const [showQuickResponses, setShowQuickResponses] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
   const [showAudioOptions, setShowAudioOptions] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   
-  // Audio chat states
-  const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [recordingTime, setRecordingTime] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
+  // Audio states
   const [audioFeedback, setAudioFeedback] = useState<boolean>(true);
   const [audioVolume, setAudioVolume] = useState<number>(80);
+  const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
   
+  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
   const audioOptionsRef = useRef<HTMLDivElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioPlayerRefs = useRef<Record<string, HTMLAudioElement>>({});
   
   // User ID - in a real app, this would come from authentication
-  const userId = "67d053a0b18cab97965e65d0";  
-  const userDetails = localStorage.getItem("user");
-  // Use the theme context instead of local state
+  const userId = "67d053a0b18cab97965e65d0";
+  
+  // Theme
   const { theme, setTheme, themeStyles } = useTheme();
 
   // Function to scroll to bottom
@@ -68,11 +49,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   // Handle clicks outside menus
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node) && 
-          !(event.target as Element).closest('.emoji-toggle-button')) {
-        setShowEmojiPicker(false);
-      }
-      
       if (optionsRef.current && !optionsRef.current.contains(event.target as Node) && 
           !(event.target as Element).closest('.options-toggle-button')) {
         setShowOptions(false);
@@ -87,18 +63,11 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [emojiPickerRef, optionsRef, audioOptionsRef]);
+  }, [optionsRef, audioOptionsRef]);
 
-  // Clean up audio resources when component unmounts
+  // Clean up audio resources
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      
       // Clean up audio URLs
       messages.forEach(message => {
         if (message.isAudio && message.audioUrl) {
@@ -117,19 +86,13 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     setMessages(mockMessages);
     
     // Fetch chat history from API - commented out for now
-    // fetchChatHistory("1", userId);
-
-    // Focus input on load
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
+    // fetchChatHistory(chatId, userId);
   }, [chatId, location.state]);
 
   // Fetch chat history from API
   const fetchChatHistory = async (chatId: string, userId: string) => {
     try {
-      // Replace with your actual endpoint
-      const response = await axios.get(`http://localhost:5000/api/chat//history/${userId}`, {
+      const response = await axios.get(`http://localhost:5000/api/chat/history/${userId}`, {
         params: { chatId, userId }
       });
       
@@ -167,118 +130,72 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Function to determine message width based on content length
-  const getMessageWidth = (content: string) => {
-    const length = content.length;
+  // Send a new message
+  const handleSendMessage = async (messageContent: string) => {
+    if (!messageContent.trim()) return;
     
-    if (length < 20) return "w-auto max-w-xs"; // Short messages
-    if (length < 100) return "w-auto max-w-sm"; // Medium messages
-    if (length < 200) return "w-auto max-w-md"; // Longer messages
-    return "w-auto max-w-lg"; // Very long messages
-  };
+    // Add user message to UI immediately
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      content: messageContent,
+      sender: "user",
+      timestamp: new Date(),
+      isNew: true
+    };
+    
+    setMessages([...messages, userMessage]);
+    
+    // Show typing indicator
+    setIsTyping(true);
+    
+    try {
+      // Send message to API
+      // const response = await axios.post("http://localhost:8000/chat/", {
+      //   userId: userId,
+      //   userMessage: messageContent
+      // });
 
-  // Send a new message via API
-  const handleSendMessage = async () => {
-    if (newMessage.trim()) {
-      // Add user message to UI immediately
-      const userMessage: Message = {
-        id: `user-${Date.now()}`,
-        content: newMessage,
-        sender: "user",
-        timestamp: new Date(),
-        isNew: true
-      };
+      const response = await axios.post("http://localhost:5000/api/chat/generate-response", {
+        userId: userId,
+        userMessage: messageContent,
+        responseType:'text'
+      });
       
-      setMessages([...messages, userMessage]);
-      const userMessageContent = newMessage;
-      setNewMessage("");
-      setShowEmojiPicker(false);
-      setShowQuickResponses(false);
-      // Show typing indicator
-      setIsTyping(true);
-      try {
-        // Send message to API
-        const response = await axios.post("http://localhost:8000/chat/", {
-          userId: userId,
-          userMessage: userMessageContent
-        });
-        
-        // Handle the response
-        if (response.data && response.data.botResponse) {
-          setIsTyping(false);
-          
-          const aiMessage: Message = {
-            id: `ai-${Date.now()}`,
-            content: response.data.botResponse,
-            sender: "ai",
-            timestamp: new Date(),
-            isNew: true
-          };
-          
-          setMessages(prev => [...prev, aiMessage]);
-        } else {
-          throw new Error("Invalid API response format");
-        }
-      } catch (error) {
-        console.error("Error sending message to API:", error);
+      // Handle the response
+      if (response.data && response.data.botResponse) {
         setIsTyping(false);
         
-        // Fallback response in case of API error
-        const errorMessage: Message = {
+        const aiMessage: Message = {
           id: `ai-${Date.now()}`,
-          content: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+          content: response.data.botResponse,
           sender: "ai",
           timestamp: new Date(),
           isNew: true
         };
         
-        setMessages(prev => [...prev, errorMessage]);
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error("Invalid API response format");
       }
+    } catch (error) {
+      console.error("Error sending message to API:", error);
+      setIsTyping(false);
+      
+      // Fallback response in case of API error
+      const errorMessage: Message = {
+        id: `ai-${Date.now()}`,
+        content: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+        sender: "ai",
+        timestamp: new Date(),
+        isNew: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
     }
   };
 
-  // Handle quick response selection
-  const handleQuickResponse = (response: string) => {
-    setNewMessage(response);
-    setShowQuickResponses(false);
-    inputRef.current?.focus();
-  };
-
-  // Add emoji to message
-  const addEmoji = (emoji: string) => {
-    setNewMessage(prev => prev + emoji);
-    inputRef.current?.focus();
-  };
-
-  // Toggle emoji picker
-  const toggleEmojiPicker = () => {
-    setShowEmojiPicker(prev => !prev);
-    setShowQuickResponses(false);
-    setShowAudioOptions(false);
-  };
-
-  // Toggle quick responses
-  const toggleQuickResponses = () => {
-    setShowQuickResponses(prev => !prev);
-    setShowEmojiPicker(false);
-    setShowAudioOptions(false);
-  };
-
-  // Toggle options menu
-  const toggleOptions = () => {
-    setShowOptions(prev => !prev);
-    setShowAudioOptions(false);
-  };
-
-  // Toggle audio options menu
-  const toggleAudioOptions = () => {
-    setShowAudioOptions(prev => !prev);
-    setShowEmojiPicker(false);
-    setShowQuickResponses(false);
-  };
-
   // Add reaction to message
-  const addReaction = (messageId: string, reaction: string) => {
+  const handleAddReaction = (messageId: string, reaction: string) => {
     setMessages(prevMessages => 
       prevMessages.map(message => 
         message.id === messageId 
@@ -295,89 +212,40 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     );
   };
 
-  // Audio recording functions
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+  // Handle audio message submission
+  const handleAudioMessage = (audioUrl: string, duration: number) => {
+    // Send audio message
+    const audioMessage: Message = {
+      id: `user-audio-${Date.now()}`,
+      content: "Audio message",
+      sender: "user",
+      timestamp: new Date(),
+      isNew: true,
+      isAudio: true,
+      audioUrl: audioUrl,
+      audioDuration: duration
+    };
+    
+    setMessages(prev => [...prev, audioMessage]);
+    setIsTyping(true);
+    
+    // Simulate AI response after audio message
+    setTimeout(() => {
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        content: "I've received your audio message. Is there anything specific you'd like me to help you with?",
+        sender: "ai",
+        timestamp: new Date(),
+        isNew: true
+      };
       
-      mediaRecorderRef.current.addEventListener("dataavailable", (event) => {
-        audioChunksRef.current.push(event.data);
-      });
-      
-      mediaRecorderRef.current.addEventListener("stop", () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        setAudioBlob(audioBlob);
-        
-        // In a real app, you would upload this to a server and get a URL
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        // Send audio message
-        const audioMessage: Message = {
-          id: `user-audio-${Date.now()}`,
-          content: "Audio message",
-          sender: "user",
-          timestamp: new Date(),
-          isNew: true,
-          isAudio: true,
-          audioUrl: audioUrl,
-          audioDuration: recordingTime
-        };
-        
-        setMessages(prev => [...prev, audioMessage]);
-        setIsTyping(true);
-        
-        // Simulate AI response after audio message
-        setTimeout(() => {
-          const aiMessage: Message = {
-            id: `ai-${Date.now()}`,
-            content: "I've received your audio message. Is there anything specific you'd like me to help you with?",
-            sender: "ai",
-            timestamp: new Date(),
-            isNew: true
-          };
-          
-          setMessages(prev => [...prev, aiMessage]);
-          setIsTyping(false);
-        }, 1500);
-        
-        // In a real application, you would send the audio to a backend for processing
-        // For example, transcribing the audio and then sending it to your chatbot API
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-      });
-      
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      
-      // Set up recording timer
-      setRecordingTime(0);
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-      
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      alert("Could not access microphone. Please check your browser permissions.");
-    }
+      setMessages(prev => [...prev, aiMessage]);
+      setIsTyping(false);
+    }, 1500);
   };
 
-  // Stop recording audio
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    }
-  };
-
-  // Play audio message
-  const playAudio = (audioUrl: string, messageId: string) => {
+  // Audio playback controls
+  const handlePlayAudio = (audioUrl: string, messageId: string) => {
     // Stop any currently playing audio
     Object.values(audioPlayerRefs.current).forEach(audio => {
       audio.pause();
@@ -418,7 +286,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   };
 
   // Stop audio message
-  const stopAudio = (audioUrl: string, messageId: string) => {
+  const handleStopAudio = (audioUrl: string, messageId: string) => {
     const audio = audioPlayerRefs.current[messageId];
     if (audio) {
       audio.pause();
@@ -428,6 +296,18 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     setIsPlaying(prev => ({ ...prev, [messageId]: false }));
   };
 
+  // Toggle audio options menu
+  const toggleAudioOptions = () => {
+    setShowAudioOptions(prev => !prev);
+    setShowOptions(false);
+  };
+
+  // Toggle options menu
+  const toggleOptions = () => {
+    setShowOptions(prev => !prev);
+    setShowAudioOptions(false);
+  };
+  
   // Change audio volume
   const changeAudioVolume = (volume: number) => {
     setAudioVolume(volume);
@@ -441,36 +321,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   // Toggle audio feedback
   const toggleAudioFeedback = () => {
     setAudioFeedback(prev => !prev);
-  };
-
-  // Format time for audio display
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-  };
-
-  // Generate a waveform visualization for audio messages (simplified version)
-  const generateWaveform = (messageId: string, playing: boolean) => {
-    // In a real app, you would analyze the audio data to create a real waveform
-    // This is a simplified visual representation
-    return (
-      <div className="flex items-center justify-center space-x-0.5">
-        {Array(20).fill(0).map((_, i) => {
-          const height = Math.abs(Math.sin((i + 1) * 0.5) * 16) + 4;
-          return (
-            <div 
-              key={i}
-              className={`w-1 rounded-full ${playing ? 'animate-pulse' : ''}`}
-              style={{ 
-                height: `${height}px`, 
-                backgroundColor: playing ? 'rgba(167, 139, 250, 0.8)' : 'rgba(167, 139, 250, 0.4)'
-              }}
-            ></div>
-          );
-        })}
-      </div>
-    );
   };
 
   // Change theme using the context
@@ -503,368 +353,54 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     }, 1500);
   };
 
-  // Render time badge with relative time format
-  const renderTimeBadge = (timestamp: Date) => {
-    const now = new Date();
-    const diffMinutes = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60));
-    
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   return (
     <div className={`flex flex-col h-screen ${themeStyles.background} transition-colors duration-500`}>
-      {/* Header */}
-      <div className={`${themeStyles.header} p-4 flex items-center shadow-xl rounded-b-2xl backdrop-blur-sm z-10 transition-colors duration-500`}>
-        <Link to="/" className="text-white mr-4 p-2 hover:bg-white/10 rounded-full transition-all duration-300">
-          <FaArrowLeft className="text-xl" />
-        </Link>
-        <div className="flex flex-col">
-          <h1 className="text-white text-xl font-bold">{chatTitle}</h1>
-          <span className="text-xs text-purple-300">Active now</span>
-        </div>
-        <div className="ml-auto flex space-x-2 items-center">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-          <span className="text-xs text-green-300">AI is online</span>
-          
-          {/* Audio options toggle button */}
-          <button 
-            className="p-2 text-white/70 hover:text-white/100 hover:bg-white/10 rounded-full ml-2 transition-all duration-300 audio-options-toggle-button"
-            onClick={toggleAudioOptions}
-          >
-            <FaHeadphones />
-          </button>
-          
-          <button 
-            className="p-2 text-white/70 hover:text-white/100 hover:bg-white/10 rounded-full ml-2 transition-all duration-300 options-toggle-button"
-            onClick={toggleOptions}
-          >
-            <FaEllipsisV />
-          </button>
-          
-          {/* Audio Options Menu */}
-          {showAudioOptions && (
-            <div 
-              ref={audioOptionsRef}
-              className="absolute top-16 right-16 w-56 bg-black/70 backdrop-blur-lg rounded-xl shadow-xl border border-white/20 overflow-hidden z-20"
-            >
-              <div className="p-3">
-                <h4 className="text-xs text-white/60 px-2 py-1">Audio Settings</h4>
-                
-                <div className="mt-2">
-                  <label className="text-sm text-white/80 flex justify-between items-center">
-                    <span>Volume</span>
-                    <span className="text-xs text-purple-300">{audioVolume}%</span>
-                  </label>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    value={audioVolume} 
-                    onChange={(e) => changeAudioVolume(parseInt(e.target.value))} 
-                    className="w-full h-2 bg-white/20 rounded-full mt-1 appearance-none cursor-pointer"
-                  />
-                </div>
-                
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-sm text-white/80">Audio Feedback</span>
-                  <button 
-                    onClick={toggleAudioFeedback}
-                    className={`p-2 rounded-full ${audioFeedback ? 'bg-purple-600' : 'bg-white/10'} transition-colors`}
-                  >
-                    {audioFeedback ? <FaVolumeUp className="text-white" /> : <FaVolumeMute className="text-white/60" />}
-                  </button>
-                </div>
-                
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <button 
-                    onClick={simulateAIAudioMessage}
-                    className={`w-full text-sm p-2 rounded bg-white/10 hover:bg-white/20 text-white/90 transition-colors flex items-center justify-center space-x-2`}
-                  >
-                    <FaMicrophone className="text-purple-400" />
-                    <span>Test Audio Response</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Options Menu */}
-          {showOptions && (
-            <div 
-              ref={optionsRef}
-              className="absolute top-16 right-4 w-48 bg-black/70 backdrop-blur-lg rounded-xl shadow-xl border border-white/20 overflow-hidden z-20"
-            >
-              <div className="p-2">
-                <h4 className="text-xs text-white/60 px-2 py-1">Theme</h4>
-                <button 
-                  onClick={() => changeTheme("purple")}
-                  className={`w-full text-left text-sm p-2 rounded hover:bg-white/10 transition-colors ${theme === "purple" ? "text-white bg-white/10" : "text-white/80"}`}
-                >
-                🟣 Purple Dream
-                </button>
-                <button 
-                  onClick={() => changeTheme("cosmic")}
-                  className={`w-full text-left text-sm p-2 rounded hover:bg-white/10 transition-colors ${theme === "cosmic" ? "text-white bg-white/10" : "text-white/80"}`}
-                >
-                ✨ Cosmic Vibes
-                </button>
-                <button 
-                  onClick={() => changeTheme("night")}
-                  className={`w-full text-left text-sm p-2 rounded hover:bg-white/10 transition-colors ${theme === "night" ? "text-white bg-white/10" : "text-white/80"}`}
-                >
-                🌃 Night Mode
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <ChatHeader 
+        chatTitle={chatTitle}
+        toggleAudioOptions={toggleAudioOptions}
+        toggleOptions={toggleOptions}
+        themeStyles={themeStyles}
+      />
       
-      {/* Chat messages */}
-      <div className="flex-grow p-4 md:p-6 overflow-y-auto scrollbar-thin scrollbar-track-transparent transition-colors duration-500">
-        <div className="space-y-6 py-2">
-          {/* Date divider */}
-          <div className="flex justify-center">
-            <div className={`${themeStyles.divider} text-purple-200 text-xs px-3 py-1 rounded-full shadow-lg`}>
-              Today
-            </div>
-          </div>
-          
-          // This is the problematic section with corrected nesting:
-{messages.map((message, index) => {
-  // Show day divider when needed (in a real app, you'd compare actual dates)
-  const showDivider = index === 2;
-  
-  return (
-    <div key={message.id}>
-      {showDivider && (
-        <div className="flex justify-center my-6">
-          <div className={`${themeStyles.divider} text-purple-200 text-xs px-3 py-1 rounded-full shadow-lg`}>
-            Yesterday
-          </div>
-        </div>
+      {/* Audio Options Menu */}
+      {showAudioOptions && (
+        <AudioOptionsMenu
+          ref={audioOptionsRef}
+          audioVolume={audioVolume}
+          audioFeedback={audioFeedback}
+          changeAudioVolume={changeAudioVolume}
+          toggleAudioFeedback={toggleAudioFeedback}
+          simulateAIAudioMessage={simulateAIAudioMessage}
+        />
       )}
       
-      <div 
-        className={`flex items-end ${message.sender === "user" ? "justify-end" : "justify-start"} ${
-          message.isNew ? "animate-fadeIn" : ""
-        }`}
-      >
-        {message.sender === "ai" && (
-          <div className={`w-8 h-8 rounded-full ${themeStyles.aiAvatar} flex items-center justify-center mr-2 mb-1 shadow-lg`}>
-            <span className="text-white text-xs font-bold">AI</span>
-          </div>
-        )}
-        
-        <div className="group flex flex-col">
-          <div
-            className={`${message.isAudio ? "w-64" : getMessageWidth(message.content)} ${
-              message.sender === "user" 
-                ? `${themeStyles.userMessage} text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl` 
-                : `${themeStyles.aiMessage} text-white rounded-tl-2xl rounded-tr-2xl rounded-br-2xl`
-            } p-4 shadow-xl backdrop-blur-sm transform transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl border border-white/10`}
-          >
-            {/* Audio message content */}
-            {message.isAudio ? (
-              <div className="flex flex-col space-y-3">
-                <div className="flex items-center space-x-3">
-                  <button 
-                    onClick={() => isPlaying[message.id] 
-                      ? stopAudio(message.audioUrl!, message.id) 
-                      : playAudio(message.audioUrl!, message.id)
-                    }
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isPlaying[message.id] 
-                        ? "bg-red-500 hover:bg-red-600" 
-                        : "bg-purple-600 hover:bg-purple-700"
-                    } transition-colors`}
-                  >
-                    {isPlaying[message.id] 
-                      ? <FaStop className="text-white text-sm" /> 
-                      : <FaPlay className="text-white text-sm ml-0.5" />
-                    }
-                  </button>
-
-                  {/* Waveform visualization */}
-                  <div className="flex-grow">
-                    {generateWaveform(message.id, isPlaying[message.id] || false)}
-                    
-                    {/* Duration display */}
-                    <div className="text-xs text-white/70 mt-1">
-                      {formatTime(message.audioDuration || 0)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Regular text message
-              message.content
-            )}
-          </div>
-          
-          {/* Message timestamp and reactions */}
-          <div className="flex items-center mt-1 space-x-1">
-            <span className="text-xs text-purple-300 opacity-70">
-              {renderTimeBadge(message.timestamp)}
-            </span>
-            
-            {message.reactions && message.reactions.length > 0 && (
-              <div className="flex items-center bg-white/10 rounded-full px-2 py-0.5">
-                {message.reactions.map((reaction) => (
-                  <span key={reaction} className="text-xs">
-                    {reaction}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {message.sender === "user" && (
-          <div className={`w-8 h-8 rounded-full ${themeStyles.userAvatar} flex items-center justify-center ml-2 mb-1 shadow-lg`}>
-            <span className="text-white text-xs font-bold">You</span>
-          </div>
-        )}
-      </div>
+      {/* Theme Options Menu */}
+      {showOptions && (
+        <ThemeOptionsMenu
+          ref={optionsRef}
+          currentTheme={theme}
+          changeTheme={changeTheme}
+        />
+      )}
+      
+      <MessageList 
+        messages={messages}
+        isTyping={isTyping}
+        isPlaying={isPlaying}
+        handlePlayAudio={handlePlayAudio}
+        handleStopAudio={handleStopAudio}
+        handleAddReaction={handleAddReaction}
+        themeStyles={themeStyles}
+        messagesEndRef={messagesEndRef}
+      />
+      
+      <ChatInput 
+        onSendMessage={handleSendMessage}
+        onAudioMessage={handleAudioMessage}
+        themeStyles={themeStyles}
+      />
     </div>
   );
-})}
-  
-        </div>
-        // Input area with text input, emoji picker, quick responses, and audio recording
-<div className={`p-4 border-t ${themeStyles.inputBorder} transition-colors duration-500`}>
-  {/* Quick responses */}
-  {showQuickResponses && (
-    <div className="flex overflow-x-auto py-2 pb-4 no-scrollbar">
-      <div className="flex space-x-2">
-        {quickResponses.map((response, index) => (
-          <button
-            key={index}
-            onClick={() => handleQuickResponse(response)}
-            className={`${themeStyles.quickResponse} whitespace-nowrap px-3 py-2 rounded-full text-sm shadow-lg`}
-          >
-            {response}
-          </button>
-        ))}
-      </div>
-    </div>
-  )}
+};
 
-  {/* Recording UI */}
-  {isRecording ? (
-    <div className={`${themeStyles.recordingContainer} rounded-2xl p-4 mb-4 shadow-lg flex items-center justify-between`}>
-      <div className="flex items-center space-x-3">
-        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-        <span className="text-white font-medium">Recording... {formatTime(recordingTime)}</span>
-      </div>
-      <button
-        onClick={stopRecording}
-        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors"
-      >
-        <FaStop />
-      </button>
-    </div>
-  ) : null}
-
-  {/* Emoji picker */}
-  {showEmojiPicker && (
-    <div 
-      ref={emojiPickerRef}
-      className={`${themeStyles.emojiPicker} border border-white/10 rounded-2xl shadow-2xl p-2 mb-4 max-h-60 overflow-y-auto`}
-    >
-      <div className="flex mb-2 space-x-1">
-        {emojiCategories.map((category, index) => (
-          <button
-            key={index}
-            onClick={() => setActiveCategory(index)}
-            className={`p-2 rounded-lg ${
-              activeCategory === index 
-                ? themeStyles.emojiCategoryActive 
-                : themeStyles.emojiCategory
-            } transition-colors`}
-          >
-            {category.name.slice(0, 1)}
-          </button>
-        ))}
-      </div>
-      
-      <div className="grid grid-cols-8 gap-1">
-        {emojiCategories[activeCategory].emojis.map((emoji, index) => (
-          <button
-            key={index}
-            onClick={() => addEmoji(emoji)}
-            className={`text-xl p-1 rounded hover:bg-white/10 transition-colors`}
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-    </div>
-  )}
-
-  <div className={`flex items-center rounded-2xl ${themeStyles.inputBackground} p-1 pl-4 shadow-lg transition-colors`}>
-    <input
-      ref={inputRef}
-      type="text"
-      value={newMessage}
-      onChange={(e) => setNewMessage(e.target.value)}
-      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-      placeholder="Type a message..."
-      className="bg-transparent text-white placeholder-white/50 flex-grow outline-none"
-    />
-
-    <div className="flex items-center space-x-1">
-      <button
-        onClick={toggleQuickResponses}
-        className="p-2 text-white opacity-70 hover:opacity-100 transition-opacity"
-      >
-        <FaStar className="text-lg" />
-      </button>
-      
-      <button
-        onClick={toggleEmojiPicker}
-        className="p-2 text-white opacity-70 hover:opacity-100 transition-opacity emoji-toggle-button"
-      >
-        <FaSmile className="text-lg" />
-      </button>
-
-      {/* Microphone/Recording button */}
-      <button
-        onClick={isRecording ? stopRecording : startRecording}
-        className={`p-3 rounded-full ${
-          isRecording
-            ? "bg-red-500 hover:bg-red-600"
-            : `${themeStyles.micButton} hover:bg-opacity-80`
-        } ml-1 transition-colors`}
-      >
-        {isRecording ? (
-          <FaStop className="text-white" />
-        ) : (
-          <FaMicrophone className="text-white" />
-        )}
-      </button>
-
-      {/* Send button */}
-      <button
-        onClick={handleSendMessage}
-        disabled={!newMessage.trim()}
-        className={`p-3 rounded-full ${
-          newMessage.trim()
-            ? `${themeStyles.sendButton} hover:bg-opacity-80`
-            : "bg-white/10 cursor-not-allowed"
-        } ml-1 transition-colors`}
-      >
-        <FaPaperPlane className="text-white" />
-      </button>
-    </div>
-  </div>
-</div>
-    </div>
-</div>
-  )
-}
-
-export default ChatDetail
+export default ChatDetail;
