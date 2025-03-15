@@ -1,9 +1,11 @@
 import os
-from fastapi import FastAPI,File, UploadFile , Form
+from fastapi import FastAPI,File, UploadFile , Form, HTTPException
 from pydantic import BaseModel
 from llama_cpp import Llama
 import whisper
 from gtts import gTTS
+import subprocess
+
 
 app = FastAPI()
 
@@ -23,6 +25,14 @@ whisper_model = whisper.load_model("base")  # Change to "small" or "medium" for 
 
 # Maintain chat history for context
 chat_history = []
+
+def check_ffmpeg():
+    """Ensure FFmpeg is installed and accessible."""
+    try:
+        subprocess.run(["ffmpeg", "-version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="FFmpeg is not installed or not in PATH.")
+
 
 @app.post("/chat/")
 async def chat(request: ChatRequest):
@@ -51,40 +61,53 @@ async def chat(request: ChatRequest):
     tts.save(audio_path)
 
     if response_type == "audio":
-        return {"response":response, "audio_url": f"/static/{audio_path}"}
+        return {"response":response, "audio_url": f"/{audio_path}"}
 
-    return {"response": response, "audio_url": f"/static/{audio_path}"}
+    return {"response": response, "audio_url": f"/{audio_path}"}
 
 @app.post("/chat/audio/")
 async def chat_audio(file: UploadFile = File(...), response_type: str = Form("both")):
-    # Save the uploaded file
+    print("Endpoint Hit!")
+    check_ffmpeg()
+    
     file_path = f"temp_{file.filename}"
-    with open(file_path, "wb") as f:
-        f.write(await file.read())
+    try:
+        # Save the uploaded file
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
 
-    # Convert Speech to Text
-    transcript = whisper_model.transcribe(file_path)["text"]
-    os.remove(file_path)  # Cleanup
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=500, detail=f"File {file_path} not found.")
 
+        # Convert Speech to Text
+        transcript = whisper_model.transcribe(file_path)["text"].strip()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing audio: {str(e)}")
+    
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)  # Cleanup
+    
     # Process chatbot response
     chat_history.append(f"User: {transcript}\nAssistant:")
     prompt = "\n".join(chat_history)
     output = llm(prompt, max_tokens=150, stop=["User:", "Assistant:"], temperature=0.7)
     response = output["choices"][0]["text"].strip()
     chat_history.append(response)
-
+    
     if response_type == "text":
         return {"response": response}
-
+    
     # Convert response to speech (TTS)
+    audio_path = "static/response.mp3"
     tts = gTTS(response)
-    audio_path = "response.mp3"
     tts.save(audio_path)
-
+    
     if response_type == "audio":
-        return {"audio_url": f"/static/{audio_path}"}
-
-    return {"response": response, "audio_url": f"/static/{audio_path}"}
+        return FileResponse(audio_path, media_type="audio/mpeg")
+    
+    return {"response": response, "audio_url": f"/{audio_path}"}
 
 
 # ✅ STATIC FILES FOR AUDIO OUTPUT
