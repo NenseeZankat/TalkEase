@@ -1,12 +1,13 @@
 import { FC, useState, useRef } from "react";
 import { FaPaperPlane, FaSmile, FaStar, FaMicrophone, FaStop } from "react-icons/fa";
 import { emojiCategories } from "../assets/emojiCategories";
-
+import { db, storage } from "../firebaseconfig"; 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onAudioMessage: (audioUrl: string, duration: number) => void;
   themeStyles: any;
 }
+const userId = "67d053a0b18cab97965e65d0";
 
 const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeStyles }) => {
   const [newMessage, setNewMessage] = useState("");
@@ -110,7 +111,35 @@ const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeSty
       alert("Could not access microphone. Please check your browser permissions.");
     }
   };
-
+  const saveAudioToFirebase = async (audioBlob: Blob, userId: string) => {
+    const timestamp = new Date().getTime();
+    const fileName = `${userId}_${timestamp}.webm`;
+  
+    // Upload audio file to Firebase Storage
+    const storageRef = Storage.ref().child(`audioMessages/${fileName}`);
+    await storageRef.put(audioBlob);
+    const audioUrl = await storageRef.getDownloadURL();
+  
+    // Save audio URL and metadata to Firestore
+    await db.collection("audioMessages").add({
+      userId,
+      audioUrl,
+      timestamp,
+      duration: recordingTime,
+    });
+  
+    // Pass audio URL back to parent component
+    onAudioMessage(audioUrl, recordingTime);
+  };
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  
+  mediaRecorderRef.current?.addEventListener("stop", () => {
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+    saveAudioToFirebase(audioBlob, userId);
+    audioChunksRef.current = [];
+  });
   // Stop recording audio
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {

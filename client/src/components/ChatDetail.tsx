@@ -89,6 +89,19 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     // fetchChatHistory(chatId, userId);
   }, [chatId, location.state]);
 
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const messagesSnapshot = await db.collection("audioMessages").where("chatId", "==", chatId).get();
+      const fetchedMessages = messagesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMessages(fetchedMessages);
+    };
+  
+    fetchMessages();
+  }, [chatId]);
+  
   // Fetch chat history from API
   const fetchChatHistory = async (chatId: string, userId: string) => {
     try {
@@ -243,7 +256,24 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       setIsTyping(false);
     }, 1500);
   };
-
+  const playAudio = (audioUrl: string) => {
+    const audio = new Audio(audioUrl);
+    audio.play();
+  };
+  
+  const renderMessages = () => {
+    return messages.map(message => (
+      <div key={message.id}>
+        {message.audioUrl && (
+          <div>
+            <button onClick={() => playAudio(message.audioUrl)}>
+              <FaHeadphones /> Play Audio
+            </button>
+          </div>
+        )}
+      </div>
+    ));
+  };
   // Audio playback controls
   const handlePlayAudio = (audioUrl: string, messageId: string) => {
     // Stop any currently playing audio
