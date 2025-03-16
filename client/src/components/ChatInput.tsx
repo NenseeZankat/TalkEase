@@ -1,7 +1,7 @@
 import { FC, useState, useRef } from "react";
 import { FaPaperPlane, FaSmile, FaStar, FaMicrophone, FaStop } from "react-icons/fa";
 import { emojiCategories } from "../assets/emojiCategories";
-import { db, storage } from "../firebaseconfig"; 
+import { db, storage ,ref,uploadBytes,getDownloadURL,addDoc,collection } from "../firebaseConfig"; 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onAudioMessage: (audioUrl: string, duration: number) => void;
@@ -93,6 +93,7 @@ const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeSty
         // Send audio message to parent component
         onAudioMessage(audioUrl, recordingTime);
         
+        saveAudioToFirebase(audioBlob, userId);
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
       });
@@ -112,34 +113,37 @@ const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeSty
     }
   };
   const saveAudioToFirebase = async (audioBlob: Blob, userId: string) => {
-    const timestamp = new Date().getTime();
-    const fileName = `${userId}_${timestamp}.webm`;
+    try {
+      const timestamp = new Date().getTime();
+      const fileName = `${userId}_${timestamp}.webm`;
   
-    // Upload audio file to Firebase Storage
-    const storageRef = Storage.ref().child(`audioMessages/${fileName}`);
-    await storageRef.put(audioBlob);
-    const audioUrl = await storageRef.getDownloadURL();
+      // Create storage reference correctly
+      const storageRef = ref(storage, `audioMessages/${fileName}`);
   
-    // Save audio URL and metadata to Firestore
-    await db.collection("audioMessages").add({
-      userId,
-      audioUrl,
-      timestamp,
-      duration: recordingTime,
-    });
+      // Upload the audio blob
+      const snapshot = await uploadBytes(storageRef, audioBlob);
+      console.log("Audio uploaded successfully:", snapshot);
   
-    // Pass audio URL back to parent component
-    onAudioMessage(audioUrl, recordingTime);
+      // Get download URL
+      const audioUrl = await getDownloadURL(storageRef);
+      console.log("Download URL:", audioUrl);
+  
+      // Save audio URL in Firestore
+      await addDoc(collection(db, "audioMessages"), {
+        userId,
+        audioUrl,
+        timestamp,
+        duration: recordingTime,
+      });
+  
+      console.log("Audio metadata saved to Firestore");
+      onAudioMessage(audioUrl, recordingTime);
+    } catch (error) {
+      console.error("Error saving audio:", error);
+    }
   };
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
   
-  mediaRecorderRef.current?.addEventListener("stop", () => {
-    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-    saveAudioToFirebase(audioBlob, userId);
-    audioChunksRef.current = [];
-  });
   // Stop recording audio
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
