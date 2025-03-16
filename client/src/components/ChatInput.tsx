@@ -1,264 +1,287 @@
-import { FC, useEffect, useState, useRef } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
-import { useTheme } from "../layout/ThemeProvider";
-import axios from "axios";
-import { Message } from "../models/Message";
-import { ChatDetailProps } from "../models/ChatDetailProps";
-import { mockMessages } from "../dummydata/mockMessages";
+import { FC, useState, useRef } from "react";
+import { FaPaperPlane, FaSmile, FaStar, FaMicrophone, FaStop } from "react-icons/fa";
+import { emojiCategories } from "../assets/emojiCategories";
+import { db, storage, ref, uploadBytes, getDownloadURL, addDoc, collection } from "../firebaseConfig"; 
 
-// Import Firebase and Storage
-import { getStorage, ref, getDownloadURL } from "firebase/storage";
+interface ChatInputProps {
+  onSendMessage: (message: string) => void;
+  onAudioMessage: (audioUrl: string, duration: number) => void;
+  themeStyles: any;
+}
 
-// Import components
-import ChatHeader from "./ChatHeader";
-import MessageList from "./MessageList";
-import ChatInput from "./ChatInput";
-import AudioOptionsMenu from "./menus/AudioOptionsMenu";
-import ThemeOptionsMenu from "./menus/ThemeOptionsMenu";
+const userId = "67d053a0b18cab97965e65d0";
+const chatId ="1";
 
-const ChatDetail: FC<ChatDetailProps> = () => {
-  const location = useLocation();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [chatTitle, setChatTitle] = useState("Chat");
-  const [isTyping, setIsTyping] = useState(false);
-  const [showAudioOptions, setShowAudioOptions] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
-  
-  // Audio states
-  const [audioFeedback, setAudioFeedback] = useState<boolean>(true);
-  const [audioVolume, setAudioVolume] = useState<number>(80);
-  const [isPlaying, setIsPlaying] = useState<Record<string, boolean>>({});
-  
-  // Refs
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const optionsRef = useRef<HTMLDivElement>(null);
-  const audioOptionsRef = useRef<HTMLDivElement>(null);
-  const audioPlayerRefs = useRef<Record<string, HTMLAudioElement>>({});
-  
-  // User ID - in a real app, this would come from authentication
-  const userId = "67d053a0b18cab97965e65d0";
-  const chatId="1";
-  
-  // Firebase Storage
-  const storage = getStorage();
-  
-  // Theme
-  const { theme, setTheme, themeStyles } = useTheme();
+const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeStyles }) => {
+  const [newMessage, setNewMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showQuickResponses, setShowQuickResponses] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(0);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [recordingTime, setRecordingTime] = useState<number>(0);
 
-  // Function to scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const inputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Quick response suggestions
+  const quickResponses = [
+    "Thanks for your help! 👍",
+    "I'll think about it 🤔",
+    "Can you explain more? 🧐",
+    "That's exactly what I needed! ✨"
+  ];
+
+  // Send message handler
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      onSendMessage(newMessage);
+      setNewMessage("");
+      setShowEmojiPicker(false);
+      setShowQuickResponses(false);
+    }
   };
 
-  // Handle clicks outside menus
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (optionsRef.current && !optionsRef.current.contains(event.target as Node) && 
-          !(event.target as Element).closest('.options-toggle-button')) {
-        setShowOptions(false);
-      }
-    }
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [optionsRef, audioOptionsRef]);
+  // Handle quick response selection
+  const handleQuickResponse = (response: string) => {
+    setNewMessage(response);
+    setShowQuickResponses(false);
+    inputRef.current?.focus();
+  };
 
-  // Fetch chat history on component mount
-  useEffect(() => {
-    if (location.state && location.state.title) {
-      setChatTitle(location.state.title);
-    }
-    
-    setMessages(mockMessages);
-    
-    // Fetch chat history from API
-    // fetchChatHistory(chatId, userId);
-  }, [chatId, location.state]);
+  // Add emoji to message
+  const addEmoji = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    inputRef.current?.focus();
+  };
 
-  // Fetch chat history from API
-  const fetchChatHistory = async (chatId: string, userId: string) => {
+  // Toggle emoji picker
+  const toggleEmojiPicker = () => {
+    setShowEmojiPicker(prev => !prev);
+    setShowQuickResponses(false);
+  };
+
+  // Toggle quick responses
+  const toggleQuickResponses = () => {
+    setShowQuickResponses(prev => !prev);
+    setShowEmojiPicker(false);
+  };
+
+  // Format time for audio display
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  // Start recording audio
+  const startRecording = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/chat/history/${userId}`, {
-        params: { chatId, userId }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      
+      mediaRecorderRef.current.addEventListener("dataavailable", (event) => {
+        audioChunksRef.current.push(event.data);
       });
       
-      if (response.data && response.data.history) {
-        const formattedMessages = response.data.history.map((item: any) => ({
-          id: item._id || `hist-${Math.random().toString(36).substring(2, 9)}`,
-          content: item.userMessage,
-          sender: "user",
-          timestamp: new Date(item.timestamp || Date.now()),
-          reactions: [],
-          isAudio: item.isAudio || false,
-        })).concat(response.data.history.map((item: any) => ({
-          id: `ai-${item._id || Math.random().toString(36).substring(2, 9)}`,
-          content: item.botResponse,
-          sender: "ai",
-          timestamp: new Date((item.timestamp || Date.now()) + 1000), // Add 1 second to ensure proper ordering
-          reactions: [],
-          isAudio: item.isAudio || false,
-        })));
+      mediaRecorderRef.current.addEventListener("stop", () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         
-        setMessages(formattedMessages);
-      }
+        // In a real app, you would upload this to a server and get a URL
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Send audio message to parent component
+        onAudioMessage(audioUrl, recordingTime);
+        
+        saveAudioToFirebase(audioBlob, userId ,chatId);
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      });
+      
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      
+      // Set up recording timer
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
     } catch (error) {
-      console.error("Error fetching chat history:", error);
-      // Fallback to mock messages if API fails
+      console.error("Error accessing microphone:", error);
+      alert("Could not access microphone. Please check your browser permissions.");
     }
   };
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const saveAudioToFirebase = async (audioBlob: Blob, userId: string,chatId:string) => {
+    try {
+      const timestamp = new Date().getTime();
+      const fileName = `${userId}_${timestamp}_${chatId}.webm`;
 
-  // Handle audio message submission
-  const handleAudioMessage = (audioUrl: string, duration: number) => {
-    const audioMessage: Message = {
-      id: `user-audio-${Date.now()}`,
-      content: "Audio message",
-      sender: "user",
-      timestamp: new Date(),
-      isNew: true,
-      isAudio: true,
-      audioUrl: audioUrl,
-      audioDuration: duration
-    };
-    
-    setMessages(prev => [...prev, audioMessage]);
-    setIsTyping(true);
-    
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        content: "I've received your audio message. Is there anything specific you'd like me to help you with?",
-        sender: "ai",
-        timestamp: new Date(),
-        isNew: true
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1500);
+      // Create storage reference correctly
+      const storageRef = ref(storage, `audioMessages/${fileName}`);
+
+      // Upload the audio blob
+      const snapshot = await uploadBytes(storageRef, audioBlob);
+      console.log("Audio uploaded successfully:", snapshot);
+
+      // Get download URL
+      const audioUrl = await getDownloadURL(storageRef);
+      console.log("Download URL:", audioUrl);
+
+      // Save audio URL in Firestore
+      await addDoc(collection(db, "audioMessages"), {
+        userId,
+        audioUrl,
+        timestamp,
+        duration: recordingTime,
+      });
+
+      console.log("Audio metadata saved to Firestore");
+      onAudioMessage(audioUrl, recordingTime);
+    } catch (error) {
+      console.error("Error saving audio:", error);
+    }
   };
 
-  // Audio playback controls
-  const handlePlayAudio = async (audioUrl: string, messageId: string) => {
-    // Stop any currently playing audio
-    Object.values(audioPlayerRefs.current).forEach(audio => {
-      audio.pause();
-      audio.currentTime = 0;
-    });
-    
-    setIsPlaying({});
-    
-    // Create or get audio element
-    let audio = audioPlayerRefs.current[messageId];
-    if (!audio) {
-      // Fetch audio from Firebase Storage
-      const fileRef = ref(storage, `audioMessages/${audioUrl}`);
-      try {
-        const audioUrlFirebase = await getDownloadURL(fileRef);
-        audio = new Audio(audioUrlFirebase);
-        audioPlayerRefs.current[messageId] = audio;
-        
-        // Set volume based on user preference
-        audio.volume = audioVolume / 100;
-        
-        audio.onplay = () => {
-          setIsPlaying(prev => ({ ...prev, [messageId]: true }));
-        };
-        
-        audio.onended = () => {
-          setIsPlaying(prev => ({ ...prev, [messageId]: false }));
-        };
-        
-        audio.onerror = () => {
-          console.error("Error playing audio");
-          setIsPlaying(prev => ({ ...prev, [messageId]: false }));
-        };
-        
-        audio.play();
-      } catch (error) {
-        console.error("Error fetching audio from Firebase:", error);
+  // Stop recording audio
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
     }
   };
 
-  const handleStopAudio = (messageId: string) => {
-    const audio = audioPlayerRefs.current[messageId];
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
-    
-    setIsPlaying(prev => ({ ...prev, [messageId]: false }));
-  };
-
-  // Toggle audio options menu
-  const toggleAudioOptions = () => {
-    setShowAudioOptions(prev => !prev);
-    setShowOptions(false);
-  };
-
-  // Toggle options menu
-  const toggleOptions = () => {
-    setShowOptions(prev => !prev);
-    setShowAudioOptions(false);
-  };
-
-  // Change theme using the context
-  const changeTheme = (newTheme: "purple" | "cosmic" | "night") => {
-    setTheme(newTheme);
-    setShowOptions(false);
-  };
-  
   return (
-    <div className={`flex flex-col h-screen ${themeStyles.background} transition-colors duration-500`}>
-      <ChatHeader 
-        chatTitle={chatTitle}
-        toggleAudioOptions={toggleAudioOptions}
-        toggleOptions={toggleOptions}
-        themeStyles={themeStyles}
-      />
-      
-      {/* Audio Options Menu */}
-      {showAudioOptions && (
-        <AudioOptionsMenu
-          ref={audioOptionsRef}
-          audioVolume={audioVolume}
-          audioFeedback={audioFeedback}
-        />
+    <div className={`p-4 border-t ${themeStyles.inputBorder} transition-colors duration-500`}>
+      {/* Quick responses */}
+      {showQuickResponses && (
+        <div className="flex overflow-x-auto py-2 pb-4 no-scrollbar">
+          <div className="flex space-x-2">
+            {quickResponses.map((response, index) => (
+              <button
+                key={index}
+                onClick={() => handleQuickResponse(response)}
+                className={`${themeStyles.quickResponse} whitespace-nowrap px-3 py-2 rounded-full text-sm shadow-lg`}
+              >
+                {response}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
-      
-      {/* Theme Options Menu */}
-      {showOptions && (
-        <ThemeOptionsMenu
-          ref={optionsRef}
-          currentTheme={theme}
-          changeTheme={changeTheme}
-        />
+
+      {/* Recording UI */}
+      {isRecording ? (
+        <div className={`${themeStyles.recordingContainer} rounded-2xl p-4 mb-4 shadow-lg flex items-center justify-between`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            <span className="text-white font-medium">Recording... {formatTime(recordingTime)}</span>
+          </div>
+          <button
+            onClick={stopRecording}
+            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors"
+          >
+            <FaStop />
+          </button>
+        </div>
+      ) : null}
+
+      {/* Emoji picker */}
+      {showEmojiPicker && (
+        <div 
+          ref={emojiPickerRef}
+          className={`${themeStyles.emojiPicker} border border-white/10 rounded-2xl shadow-2xl p-2 mb-4 max-h-60 overflow-y-auto`}
+        >
+          <div className="flex mb-2 space-x-1">
+            {emojiCategories.map((category, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveCategory(index)}
+                className={`p-2 rounded-lg ${activeCategory === index 
+                  ? themeStyles.emojiCategoryActive 
+                  : themeStyles.emojiCategory} transition-colors`}
+              >
+                {category.name.slice(0, 1)}
+              </button>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-8 gap-1">
+            {emojiCategories[activeCategory].emojis.map((emoji, index) => (
+              <button
+                key={index}
+                onClick={() => addEmoji(emoji)}
+                className="text-xl p-1 rounded hover:bg-white/10 transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
-      
-      <MessageList 
-        messages={messages}
-        isTyping={isTyping}
-        isPlaying={isPlaying}
-        handlePlayAudio={handlePlayAudio}
-        handleStopAudio={handleStopAudio}
-        themeStyles={themeStyles}
-        messagesEndRef={messagesEndRef}
-      />
-      
-      <ChatInput 
-        onSendMessage={handleSendMessage}
-        onAudioMessage={handleAudioMessage}
-        themeStyles={themeStyles}
-      />
+
+      <div className={`flex items-center rounded-2xl ${themeStyles.inputBackground} p-1 pl-4 shadow-lg transition-colors`}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+          placeholder="Type a message..."
+          className="bg-transparent text-white placeholder-white/50 flex-grow outline-none"
+        />
+
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={toggleQuickResponses}
+            className="p-2 text-white opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <FaStar className="text-lg" />
+          </button>
+          
+          <button
+            onClick={toggleEmojiPicker}
+            className="p-2 text-white opacity-70 hover:opacity-100 transition-opacity emoji-toggle-button"
+          >
+            <FaSmile className="text-lg" />
+          </button>
+
+          {/* Microphone/Recording button */}
+          <button
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`p-3 rounded-full ${isRecording
+              ? "bg-red-500 hover:bg-red-600"
+              : themeStyles.micButton} hover:bg-opacity-80 ml-1 transition-colors`}
+          >
+            {isRecording ? (
+              <FaStop className="text-white" />
+            ) : (
+              <FaMicrophone className="text-white" />
+            )}
+          </button>
+
+          {/* Send button */}
+          <button
+            onClick={handleSendMessage}
+            disabled={!newMessage.trim()}
+            className={`p-3 rounded-full ${newMessage.trim()
+              ? themeStyles.sendButton
+              : "bg-white/10 cursor-not-allowed"} ml-1 transition-colors`}
+          >
+            <FaPaperPlane className="text-white" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default ChatDetail;
+export default ChatInput;
