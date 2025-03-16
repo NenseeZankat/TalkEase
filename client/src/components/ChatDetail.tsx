@@ -1,7 +1,6 @@
 // src/components/chat/ChatDetail.tsx
 import { FC, useEffect, useState, useRef } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
-import { FaArrowLeft, FaEllipsisV, FaHeadphones } from "react-icons/fa";
 import { useTheme } from "../layout/ThemeProvider";
 import axios from "axios";
 import { Message } from "../models/Message";
@@ -16,7 +15,6 @@ import AudioOptionsMenu from "./menus/AudioOptionsMenu";
 import ThemeOptionsMenu from "./menus/ThemeOptionsMenu";
 
 const ChatDetail: FC<ChatDetailProps> = () => {
-  const { chatId } = useParams<{ chatId: string }>();
   const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatTitle, setChatTitle] = useState("Chat");
@@ -37,6 +35,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   
   // User ID - in a real app, this would come from authentication
   const userId = "67d053a0b18cab97965e65d0";
+  const chatId="1";
   
   // Theme
   const { theme, setTheme, themeStyles } = useTheme();
@@ -53,10 +52,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
           !(event.target as Element).closest('.options-toggle-button')) {
         setShowOptions(false);
       }
-      if (audioOptionsRef.current && !audioOptionsRef.current.contains(event.target as Node) && 
-          !(event.target as Element).closest('.audio-options-toggle-button')) {
-        setShowAudioOptions(false);
-      }
     }
     
     document.addEventListener("mousedown", handleClickOutside);
@@ -65,18 +60,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     };
   }, [optionsRef, audioOptionsRef]);
 
-  // Clean up audio resources
-  useEffect(() => {
-    return () => {
-      // Clean up audio URLs
-      messages.forEach(message => {
-        if (message.isAudio && message.audioUrl) {
-          URL.revokeObjectURL(message.audioUrl);
-        }
-      });
-    };
-  }, [messages]);
-
+  
   // Fetch chat history on component mount
   useEffect(() => {
     if (location.state && location.state.title) {
@@ -89,19 +73,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     // fetchChatHistory(chatId, userId);
   }, [chatId, location.state]);
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      const messagesSnapshot = await db.collection("audioMessages").where("chatId", "==", chatId).get();
-      const fetchedMessages = messagesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMessages(fetchedMessages);
-    };
-  
-    fetchMessages();
-  }, [chatId]);
-  
   // Fetch chat history from API
   const fetchChatHistory = async (chatId: string, userId: string) => {
     try {
@@ -117,8 +88,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
           timestamp: new Date(item.timestamp || Date.now()),
           reactions: [],
           isAudio: item.isAudio || false,
-          audioUrl: item.audioUrl || null,
-          audioDuration: item.audioDuration || 0
         })).concat(response.data.history.map((item: any) => ({
           id: `ai-${item._id || Math.random().toString(36).substring(2, 9)}`,
           content: item.botResponse,
@@ -126,8 +95,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
           timestamp: new Date((item.timestamp || Date.now()) + 1000), // Add 1 second to ensure proper ordering
           reactions: [],
           isAudio: item.isAudio || false,
-          audioUrl: item.audioUrl || null,
-          audioDuration: item.audioDuration || 0
+
         })));
         
         setMessages(formattedMessages);
@@ -256,24 +224,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       setIsTyping(false);
     }, 1500);
   };
-  const playAudio = (audioUrl: string) => {
-    const audio = new Audio(audioUrl);
-    audio.play();
-  };
-  
-  const renderMessages = () => {
-    return messages.map(message => (
-      <div key={message.id}>
-        {message.audioUrl && (
-          <div>
-            <button onClick={() => playAudio(message.audioUrl)}>
-              <FaHeadphones /> Play Audio
-            </button>
-          </div>
-        )}
-      </div>
-    ));
-  };
+
   // Audio playback controls
   const handlePlayAudio = (audioUrl: string, messageId: string) => {
     // Stop any currently playing audio
@@ -337,52 +288,12 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     setShowOptions(prev => !prev);
     setShowAudioOptions(false);
   };
-  
-  // Change audio volume
-  const changeAudioVolume = (volume: number) => {
-    setAudioVolume(volume);
-    
-    // Update volume for all existing audio players
-    Object.values(audioPlayerRefs.current).forEach(audio => {
-      audio.volume = volume / 100;
-    });
-  };
-
-  // Toggle audio feedback
-  const toggleAudioFeedback = () => {
-    setAudioFeedback(prev => !prev);
-  };
 
   // Change theme using the context
   const changeTheme = (newTheme: "purple" | "cosmic" | "night") => {
     setTheme(newTheme);
     setShowOptions(false);
   };
-
-  // Send an AI audio message (simulated for demo)
-  const simulateAIAudioMessage = () => {
-    // In a real app, this would be a real audio URL from your backend
-    const mockAudioUrl = "https://example.com/audio/ai-response.mp3";
-    
-    setIsTyping(true);
-    
-    setTimeout(() => {
-      const aiAudioMessage: Message = {
-        id: `ai-audio-${Date.now()}`,
-        content: "Audio message from AI",
-        sender: "ai",
-        timestamp: new Date(),
-        isNew: true,
-        isAudio: true,
-        audioUrl: mockAudioUrl,
-        audioDuration: 8 // Mock duration
-      };
-      
-      setMessages(prev => [...prev, aiAudioMessage]);
-      setIsTyping(false);
-    }, 1500);
-  };
-
   return (
     <div className={`flex flex-col h-screen ${themeStyles.background} transition-colors duration-500`}>
       <ChatHeader 
