@@ -76,3 +76,96 @@ export const getChatHistory = async (req, res) => {
 
 
 
+const axios = require("axios");
+const multer = require("multer");
+const express = require("express");
+const FormData = require("form-data");
+const fs = require("fs");
+const firebaseAdmin = require("firebase-admin");
+
+const router = express.Router();
+const upload = multer({ dest: "uploads/" });
+const FASTAPI_URL = "http://localhost:8000/chat";
+
+// Initialize Firebase Admin
+firebaseAdmin.initializeApp({
+  credential: firebaseAdmin.credential.cert("path/to/firebase-key.json"),
+  storageBucket: "your-bucket-name.appspot.com"
+});
+const bucket = firebaseAdmin.storage().bucket();
+
+// Handle text-based chat request
+router.post("/text", async (req, res) => {
+    try {
+        const { message, responseType } = req.body;
+        const response = await axios.post(`${FASTAPI_URL}/`, { message, response_type: responseType });
+        res.json(response.data);
+    } catch (error) {
+        console.error("Chat Error:", error);
+        res.status(500).json({ error: "Error processing chat request." });
+    }
+});
+
+// Handle audio-based chat request
+router.post("/audio", upload.single("audio"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No audio file uploaded." });
+        }
+
+        const formData = new FormData();
+        formData.append("file", fs.createReadStream(req.file.path));
+        formData.append("response_type", req.body.responseType || "both");
+
+        // Store user audio in Firebase
+        const userAudioUrl = await uploadAudioToFirebase(req.file.path, req.file.originalname);
+
+        const response = await axios.post(`${FASTAPI_URL}/audio/`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        // Clean up uploaded file after processing
+        fs.unlinkSync(req.file.path);
+
+        // Fetch the assistant's audio response URL
+        const assistantAudioUrl = response.data.audio_url;
+        
+        // Store response in MongoDB (Assuming MongoDB is already connected and set up)
+
+        // Now delete the uploaded user and assistant audio files from Firebase
+        await deleteAudioFromFirebase(req.file.originalname);
+        await deleteAudioFromFirebase(response.data.audio_url);
+
+        // Return user audio and assistant audio URL along with text response
+        res.json({
+            user_audio_url: userAudioUrl,
+            assistant_audio_url: assistantAudioUrl,
+            response: response.data.response,
+        });
+    } catch (error) {
+        console.error("Audio Chat Error:", error);
+        res.status(500).json({ error: "Error processing audio chat request." });
+    }
+});
+
+// Helper function to upload audio to Firebase
+async function uploadAudioToFirebase(filePath, fileName) {
+    const blob = bucket.file(fileName);
+    await bucket.upload(filePath, {
+        destination: fileName,
+        metadata: { contentType: 'audio/mpeg' },
+    });
+
+    // Make the file public and return the URL
+    await blob.makePublic();
+    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+}
+
+// Helper function to delete audio from Firebase
+async function deleteAudioFromFirebase(fileName) {
+    const file = bucket.file(fileName);
+    await file.delete();
+    console.log(`File ${fileName} deleted from Firebase Storage`);
+}
+
+module.exports = router;

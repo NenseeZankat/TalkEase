@@ -60,10 +60,10 @@ function AuthProvider({ children }: AuthProviderProps) {
 const PrivateRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useContext(AuthContext);
 
-  if (!isAuthenticated) {
-    // Redirect to login page if not authenticated
-    return <Navigate to="/login" />;
-  }
+  // if (!isAuthenticated) {
+  //   // Redirect to login page if not authenticated
+  //   return <Navigate to="/login" />;
+  // }
 
   return <>{children}</>;
 };
