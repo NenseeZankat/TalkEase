@@ -67,7 +67,9 @@ async def chat(request: ChatRequest):
     if response_type == "text":
         return {"response": final_response}
     
-    tts = gTTS(final_response)
+    tts_lang = "gu" if detected_lang == "gu" else "en"
+        
+    tts = gTTS(final_response, lang=tts_lang)
     # audio_path = "response.mp3"
     # tts.save(audio_path)
     # audio_url = upload_to_firebase(audio_path, "response.mp3")
