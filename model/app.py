@@ -46,8 +46,8 @@ async def chat(request: ChatRequest):
     detected_lang = detect(user_message)
     print(f"Detected Language: {detected_lang}")
 
-    if detected_lang == "gu":
-        user_message = translator.translate(user_message, src="gu", dest="en").text
+    if detected_lang != "en":
+        user_message = translator.translate(user_message, src=detected_lang, dest="en").text
         print(f"Translated to English: {user_message}")
 
     response_type = request.response_type.lower()
@@ -60,16 +60,14 @@ async def chat(request: ChatRequest):
 
     final_response = english_response
 
-    if detected_lang == "gu":
-        final_response = translator.translate(english_response, src="en", dest="gu").text
-        print(f"Translated Back to Gujarati: {final_response}")
+    if detected_lang != "en":
+        final_response = translator.translate(english_response, src="en", dest=detected_lang).text
+        print(f"Translated Back to {detected_lang}: {final_response}")
     
     if response_type == "text":
         return {"response": final_response}
-    
-    tts_lang = "gu" if detected_lang == "gu" else "en"
-        
-    tts = gTTS(final_response, lang=tts_lang)
+            
+    tts = gTTS(final_response, lang=detected_lang)
     # audio_path = "response.mp3"
     # tts.save(audio_path)
     # audio_url = upload_to_firebase(audio_path, "response.mp3")
