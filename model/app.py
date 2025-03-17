@@ -91,6 +91,31 @@ async def chat(request: ChatRequest):
     
     return {"response": final_response, "audio_url": audio_path}
 
+@app.post("/chat/audio/")
+async def chat_audio(file: UploadFile = File(...), response_type: str = Form("both")):
+     file_path = f"temp_{file.filename}"
+     with open(file_path, "wb") as f:
+         f.write(await file.read())
+ 
+     transcript = whisper_model.transcribe(file_path)["text"].strip()
+     os.remove(file_path)  # Cleanup
+     
+     chat_history.append(f"User: {transcript}\nAssistant:")
+     prompt = "\n".join(chat_history)
+     output = llm(prompt, max_tokens=150, stop=["User:", "Assistant:"], temperature=0.7)
+     response = output["choices"][0]["text"].strip()
+     chat_history.append(response)
+     
+     if response_type == "text":
+         return {"response": response}
+     
+     # Convert text response to speech and upload to Firebase
+     tts = gTTS(response)
+     response_audio_path = "response.mp3"
+     tts.save(response_audio_path)
+     audio_url = upload_to_firebase(response_audio_path, "response.mp3")
+     
+     return {"response": response, "audio_url": audio_url}   
 
 @app.post("/chat/audio/file")
 async def chat_audio_file(
