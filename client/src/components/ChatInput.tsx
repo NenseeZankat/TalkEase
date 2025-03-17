@@ -5,7 +5,7 @@ import { db, storage, ref, uploadBytes, getDownloadURL, addDoc, collection } fro
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
-  onAudioMessage: (audioUrl: string, duration: number) => void;
+  onAudioMessage: (audioBlob: Blob, duration: number) => void;
   themeStyles: any;
 }
 
@@ -94,7 +94,7 @@ const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeSty
         const audioUrl = URL.createObjectURL(audioBlob);
         
         // Send audio message to parent component
-        onAudioMessage(audioUrl, recordingTime);
+        onAudioMessage(audioBlob, recordingTime);
         
         saveAudioToFirebase(audioBlob, userId ,chatId);
         // Stop all tracks
@@ -141,7 +141,7 @@ const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeSty
       });
 
       console.log("Audio metadata saved to Firestore");
-      onAudioMessage(audioUrl, recordingTime);
+      onAudioMessage(audioBlob, recordingTime);
     } catch (error) {
       console.error("Error saving audio:", error);
     }

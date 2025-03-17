@@ -3,3 +3,5 @@ llama-2-7b-chat.gguf
 llama-2-7b-chat.Q4_K_M.gguf
 __pycache__
 response.mp3
+.env
+firebase-key.json

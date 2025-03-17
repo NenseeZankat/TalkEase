@@ -1,4 +1,7 @@
 import os
+import time
+from charset_normalizer import detect
+import requests  # This should be a separate import
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from pydantic import BaseModel
 from llama_cpp import Llama
@@ -6,8 +9,12 @@ import whisper
 from gtts import gTTS
 from fastapi.responses import FileResponse
 from firebase_admin import credentials, storage, initialize_app
+from dotenv import load_dotenv
+
 from langdetect import detect
 from googletrans import Translator
+
+load_dotenv()
 
 app = FastAPI()
 translator = Translator()
@@ -16,17 +23,22 @@ class ChatRequest(BaseModel):
     message: str
     response_type: str
 
+class AudioRequest(BaseModel):
+    audio_url: str
+    response_type: str = "both"
+    user_id: str
+
 # Load LLaMA Model
-model_path = "./saved_model/llama-2-7b-chat-compressed_Q4.gguf"
+model_path = os.getenv("MODEL_PATH")
 llm = Llama(model_path=model_path, n_ctx=2048, n_threads=8)
 
 # Load Whisper Model for Speech-to-Text
 whisper_model = whisper.load_model("base")
 
-# # Initialize Firebase for Audio Storage
-# cred = credentials.Certificate("path/to/firebase-key.json")
-# initialize_app(cred, {"storageBucket": "your-bucket-name.appspot.com"})
-# bucket = storage.bucket()
+# Initialize Firebase for Audio Storage
+cred = credentials.Certificate("./firebase-key.json")
+initialize_app(cred, {"storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET")})
+bucket = storage.bucket()
 
 # Maintain chat history
 chat_history = []
@@ -103,4 +115,50 @@ async def chat_audio(file: UploadFile = File(...), response_type: str = Form("bo
     tts.save(response_audio_path)
     audio_url = upload_to_firebase(response_audio_path, "response.mp3")
     
-    return {"response": response, "audio_url": audio_url}
+    return {"response": response, "audio_url": audio_url}    
+
+@app.post("/chat/audio/file")
+async def chat_audio_file(
+    file: UploadFile = File(...),
+    response_type: str = Form("both"),
+    user_id: str = Form(...)
+):
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_audio_{int(time.time())}.webm"
+    try:
+        with open(temp_file_path, "wb") as f:
+            f.write(await file.read())
+        
+        # Transcribe the audio
+        transcript = whisper_model.transcribe(temp_file_path)["text"].strip()
+        os.remove(temp_file_path)  # Cleanup
+        
+        # Process with LLM
+        chat_history.append(f"User: {transcript}\nAssistant:")
+        prompt = "\n".join(chat_history)
+        output = llm(prompt, max_tokens=150, stop=["User:", "Assistant:"], temperature=0.7)
+        response_text = output["choices"][0]["text"].strip()
+        chat_history.append(response_text)
+        
+        if response_type == "text":
+            return {"response": response_text}
+        
+        # Convert text response to speech and upload to Firebase
+        tts = gTTS(response_text)
+        response_audio_path = "response.mp3"
+        tts.save(response_audio_path)
+        timestamp = int(time.time())
+        chat_id = "1"  # You might want to make this dynamic
+        audio_filename = f"audioMessages/response/response_{user_id}_{timestamp}_{chat_id}.webm"
+        audio_url = upload_to_firebase(response_audio_path, audio_filename)
+        os.remove(response_audio_path)  # Cleanup
+        
+        return {"response": response_text, "audio_url": audio_url}
+    
+    except Exception as e:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        if os.path.exists("response.mp3"):
+            os.remove("response.mp3")
+        print(f"Error processing audio file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing audio file: {str(e)}")

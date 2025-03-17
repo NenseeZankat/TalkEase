@@ -14,6 +14,10 @@ import ChatInput from "./ChatInput";
 import AudioOptionsMenu from "./menus/AudioOptionsMenu";
 import ThemeOptionsMenu from "./menus/ThemeOptionsMenu";
 
+//
+import { collection, query, orderBy, limit, getDocs, addDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
+
 const ChatDetail: FC<ChatDetailProps> = () => {
   const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -194,37 +198,113 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   };
 
   // Handle audio message submission
-  const handleAudioMessage = (audioUrl: string, duration: number) => {
-    // Send audio message
+  // const handleAudioMessage = (audioUrl: string, duration: number) => {
+  //   // Send audio message
+  //   const audioMessage: Message = {
+  //     id: `user-audio-${Date.now()}`,
+  //     content: "Audio message",
+  //     sender: "user",
+  //     timestamp: new Date(),
+  //     isNew: true,
+  //     isAudio: true,
+  //     audioUrl: audioUrl,
+  //     audioDuration: duration
+  //   };
+    
+  //   setMessages(prev => [...prev, audioMessage]);
+  //   setIsTyping(true);
+    
+  //   // Simulate AI response after audio message
+  //   setTimeout(() => {
+  //     const aiMessage: Message = {
+  //       id: `ai-${Date.now()}`,
+  //       content: "I've received your audio message. Is there anything specific you'd like me to help you with?",
+  //       sender: "ai",
+  //       timestamp: new Date(),
+  //       isNew: true
+  //     };
+      
+  //     setMessages(prev => [...prev, aiMessage]);
+  //     setIsTyping(false);
+  //   }, 1500);
+  // };
+
+  // Frontend: Modified handleAudioMessage function
+  const handleAudioMessage = async (audioBlob: Blob, duration: number) => {
+    // Create a temporary URL for immediate playback
+    const temporaryAudioUrl = URL.createObjectURL(audioBlob);
+    
+    // Create audio message in UI with the temporary URL
     const audioMessage: Message = {
       id: `user-audio-${Date.now()}`,
-      content: "Audio message",
+      content: "Audio message", 
       sender: "user",
       timestamp: new Date(),
       isNew: true,
       isAudio: true,
-      audioUrl: audioUrl,
-      audioDuration: duration
+      audioDuration: duration,
+      audioUrl: temporaryAudioUrl // Add this temporary URL
     };
     
-    setMessages(prev => [...prev, audioMessage]);
-    setIsTyping(true);
+    // ... rest of your code
+  setMessages(prev => [...prev, audioMessage]);
+
+  setIsTyping(true);
+  
+  // Create a FormData object and append the audio blob
+  const formData = new FormData();
+  formData.append('audio_file', audioBlob, 'audio-message.webm');
+  formData.append('response_type', 'both');
+  formData.append('user_id', userId);
+  
+  try {
+    // Send the actual audio file to the backend instead of URL
+    const response = await axios.post("http://localhost:5000/api/chat/audio-message", 
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
     
-    // Simulate AI response after audio message
-    setTimeout(() => {
+
+    
+    // Handle the response
+    if (response.data && response.data.botResponse) {
+      setIsTyping(false);
+      
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
-        content: "I've received your audio message. Is there anything specific you'd like me to help you with?",
+        content: response.data.botResponse,
         sender: "ai",
         timestamp: new Date(),
-        isNew: true
+        isNew: true,
+        isAudio: response.data.audioUrl ? true : false,
+        audioUrl: response.data.audioUrl || null
       };
       
       setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1500);
-  };
-
+    } else {
+      throw new Error("Invalid API response format");
+    }
+  } catch (error) {
+    console.error("Error sending audio message:", error);
+    setIsTyping(false);
+    
+    // Fallback response in case of API error
+    const errorMessage: Message = {
+      id: `ai-${Date.now()}`,
+      content: "I'm sorry, I'm having trouble processing your audio message. Please try again later.",
+      sender: "ai",
+      timestamp: new Date(),
+      isNew: true
+    };
+    
+    setMessages(prev => [...prev, errorMessage]);
+  }
+};
+  
   // Audio playback controls
   const handlePlayAudio = (audioUrl: string, messageId: string) => {
     // Stop any currently playing audio
@@ -261,8 +341,12 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     }
     
     // Play the audio
+    console.log("Attempting to play audio from URL:", audioUrl, "for message:", messageId);
+
+// And in the error handler:
     audio.play().catch(error => {
-      console.error("Error playing audio:", error);
+      console.error("Error playing audio:", error, "URL was:", audioUrl);
+      setIsPlaying(prev => ({ ...prev, [messageId]: false }));
     });
   };
 

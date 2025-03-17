@@ -1,5 +1,5 @@
 import express from "express";
-import { semanticSearch, getChatHistory, generateResponse } from "../controllers/chatController.js";
+import { semanticSearch, getChatHistory, generateResponse , generateAudio} from "../controllers/chatController.js";
 
 const chatrouter = express.Router();
 
@@ -11,5 +11,6 @@ chatrouter.get("/history/:userId", getChatHistory);
 
 chatrouter.post("/generate-response", generateResponse);
 
+// chatrouter.post("/audio-message" , generateAudio)
 
 export default chatrouter;

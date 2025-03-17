@@ -5,4 +5,8 @@ export interface Message {
     timestamp: Date;
     reactions?: string[];
     isNew?: boolean;
+    isAudio?:boolean;
+    audioBlob?:Blob;
+    audioDuration?:number;
+    audioUrl?:string
   }
