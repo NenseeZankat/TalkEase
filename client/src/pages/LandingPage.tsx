@@ -210,8 +210,7 @@ const LandingPage: React.FC = () => {
                   }}
                 >
                   {/* Chat UI Mockup */}
-                  {/* Chat UI Mockup */}
-<Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+=<Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
   <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>TalkEase</Typography>
 </Box>
 

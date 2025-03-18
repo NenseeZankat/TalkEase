@@ -1,8 +1,9 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../App";
-import { useTheme } from "../layout/ThemeProvider"; // Added theme provider
+import { useTheme } from "../layout/ThemeProvider";
 import axios from "axios";
+import { createTheme, ThemeProvider, Box } from "@mui/material";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -14,111 +15,7 @@ const Signup = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
   
-  // Get the theme styles (added from Login component)
-  const { themeStyles } = useTheme();
-
-  // Background animation effect
-  useEffect(() => {
-    // Create canvas for particle animation
-    const canvas = document.getElementById('background-canvas') as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas dimensions
-    const setCanvasDimensions = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    setCanvasDimensions();
-    window.addEventListener('resize', setCanvasDimensions);
-
-    // Particle properties
-    const particlesArray: Particle[] = [];
-    const numberOfParticles = 100;
-
-    class Particle {
-      x: number;
-      y: number;
-      size: number;
-      speedX: number;
-      speedY: number;
-      color: string;
-
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 3 + 1;
-        this.speedX = Math.random() * 0.5 - 0.25;
-        this.speedY = Math.random() * 0.5 - 0.25;
-        // Random color from the gradient palette
-        const colors = ['#ff007f', '#c77dff', '#6a00f4', '#560bad'];
-        this.color = colors[Math.floor(Math.random() * colors.length)];
-      }
-
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-
-        // Bounce off edges
-        if (this.x > canvas.width || this.x < 0) {
-          this.speedX = -this.speedX;
-        }
-        if (this.y > canvas.height || this.y < 0) {
-          this.speedY = -this.speedY;
-        }
-      }
-
-      draw() {
-        if (!ctx) return;
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-
-    // Create particles
-    const init = () => {
-      for (let i = 0; i < numberOfParticles; i++) {
-        particlesArray.push(new Particle());
-      }
-    };
-
-    // Animation loop
-    const animate = () => {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw gradient background
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, 'rgba(13, 15, 24, 1)');
-      gradient.addColorStop(0.5, 'rgba(22, 27, 34, 1)');
-      gradient.addColorStop(1, 'rgba(13, 15, 24, 1)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Update and draw particles
-      for (let i = 0; i < particlesArray.length; i++) {
-        particlesArray[i].update();
-        particlesArray[i].draw();
-      }
-
-      requestAnimationFrame(animate);
-    };
-
-    init();
-    animate();
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', setCanvasDimensions);
-    };
-  }, []);
-
+  
   // Handle email validation
   const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
 
@@ -184,8 +81,26 @@ const Signup = () => {
   const togglePasswordVisibility = () => {
     setPasswordVisible((prevState) => !prevState);
   };
+  const theme = createTheme({
+    palette: {
+      primary: { main: "#7c3aed" },
+      secondary: { main: "#f43f5e" },
+      background: { default: "#0f172a" },
+    },
+    typography: {
+      fontFamily: '"Poppins", "Roboto", "Helvetica", "Arial", sans-serif',
+      h1: { fontWeight: 700 },
+      h2: { fontWeight: 600 },
+    },
+  });
+  const { themeStyles } = useTheme();
 
   return (
+    <ThemeProvider theme={theme}>
+    <Box sx={{ minHeight: "100vh", background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", position: "relative", overflow: "hidden", color: "white" }}>
+      <Box sx={{ position: "absolute", width: "300px", height: "300px", borderRadius: "50%", background: "linear-gradient(45deg, rgba(124, 58, 237, 0.15), rgba(124, 58, 237, 0.05))", top: "-100px", right: "-100px", zIndex: 0 }} />
+      <Box sx={{ position: "absolute", width: "200px", height: "200px", borderRadius: "50%", background: "linear-gradient(45deg, rgba(244, 63, 94, 0.15), rgba(244, 63, 94, 0.05))", bottom: "-50px", left: "-50px", zIndex: 0 }} />
+
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background canvas */}
       <canvas id="background-canvas" className="absolute top-0 left-0 w-full h-full -z-10"></canvas>
@@ -246,6 +161,9 @@ const Signup = () => {
         </p>
       </div>
     </div>
+    </Box>
+    </ThemeProvider>
+
   );
 };
 
