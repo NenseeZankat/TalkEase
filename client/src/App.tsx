@@ -8,6 +8,7 @@ import "./index.css";
 import { FaHome, FaComments, FaSignInAlt, FaUserPlus, FaBars, FaTimes, FaSignOutAlt, FaMoon, FaSun, FaMagic } from "react-icons/fa";
 import ChatDetail from "./components/ChatDetail";
 import { ThemeProvider, useTheme } from "./layout/ThemeProvider";
+import LandingPage from "./pages/LandingPage"; // Import the LandingPage component
 
 // Define the auth context type
 interface AuthContextType {
@@ -56,18 +57,6 @@ function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
-// Private Route Component
-const PrivateRoute = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useContext(AuthContext);
-
-  // if (!isAuthenticated) {
-  //   // Redirect to login page if not authenticated
-  //   return <Navigate to="/login" />;
-  // }
-
-  return <>{children}</>;
-};
-
 // Theme Selector Component
 const ThemeSelector = () => {
   const { theme, setTheme } = useTheme();
@@ -82,7 +71,7 @@ const ThemeSelector = () => {
         {theme === "purple" ? <FaMagic /> : theme === "cosmic" ? <FaSun /> : <FaMoon />}
         <span>Theme</span>
       </button>
-      
+
       {showThemeOptions && (
         <div className="absolute left-0 mt-1 w-full rounded-md shadow-lg overflow-hidden z-30 bg-black/70 backdrop-blur-lg border border-white/20">
           <div className="py-1">
@@ -120,6 +109,7 @@ function AppContent() {
   return (
     <Router>
       <div className={`flex h-screen relative ${themeStyles.background} transition-all duration-500`}>
+        {/* Sidebar toggle and sidebar */}
         <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? "filter blur-sm" : ""}`}>
           <div className="fixed top-4 left-4 z-30">
             <button 
@@ -129,23 +119,18 @@ function AppContent() {
               {isSidebarOpen ? <FaTimes /> : <FaBars />}
             </button>
           </div>
-          
+
           <Routes>
-            <Route path="/" element={<Home />} />
+            {/* Route for landing page */}
+            <Route path="/" element={isAuthenticated ? <Navigate to="/home" /> : <LandingPage />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            {/* Protecting the /chat and /home routes */}
-            <Route 
-              path="/chat" 
-              element={<PrivateRoute><Chat /></PrivateRoute>} 
-            />
-            <Route 
-              path="/chat/:chatId" 
-              element={<PrivateRoute><ChatDetail /></PrivateRoute>} 
-            />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/chat/:chatId" element={<ChatDetail />} />
           </Routes>
         </div>
-        
+
         <div 
           className={`fixed top-0 left-0 h-full ${themeStyles.sidebar} text-white p-5 flex flex-col space-y-6 shadow-lg transition-all duration-300 z-20 backdrop-blur-sm border-r border-white/10 ${
             isSidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"
@@ -159,11 +144,11 @@ function AppContent() {
             <FaTimes />
           </button>
           <div className="pt-12">
-            <h2 className="text-xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-300">Chat App</h2>
+            <h2 className="text-xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-300">TalkEase</h2>
             
             <nav className="flex flex-col space-y-3">
               <Link 
-                to="/" 
+                to={isAuthenticated ? "/home" : "/"} 
                 className={`flex items-center space-x-2 p-3 rounded-lg ${themeStyles.navItem} transition-colors`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -176,11 +161,11 @@ function AppContent() {
               >
                 <FaComments /> <span>Chat</span>
               </Link>
-              
+
               <ThemeSelector />
-              
+
               <div className={`my-2 h-px ${themeStyles.divider} opacity-30`}></div>
-              
+
               {isAuthenticated ? (
                 <button 
                   onClick={() => {
