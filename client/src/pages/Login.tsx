@@ -42,7 +42,7 @@ const Login = () => {
       const { token, user } = response.data;
       login(token);
       localStorage.setItem("user", JSON.stringify(user));
-      navigate("/chat");
+      navigate("/home");
     } catch (err) {
       setError(err.response?.data?.msg || "Something went wrong. Please try again.");
     }

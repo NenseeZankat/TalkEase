@@ -55,7 +55,7 @@ const Signup = () => {
       // Login the user and store user data in localStorage (like in Login)
       login(token);
       localStorage.setItem("user", JSON.stringify(user));
-      navigate("/chat");  // Redirect to the chat page after successful signup
+      navigate("/login");  // Redirect to the chat page after successful signup
 
     } catch (err) {
       if (err.response) {

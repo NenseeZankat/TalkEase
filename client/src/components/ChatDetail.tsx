@@ -1,6 +1,6 @@
 // src/components/chat/ChatDetail.tsx
 import { FC, useEffect, useState, useRef } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
+import {  useLocation } from "react-router-dom";
 import { useTheme } from "../layout/ThemeProvider";
 import axios from "axios";
 import { Message } from "../models/Message";
@@ -14,7 +14,7 @@ import ChatInput from "./ChatInput";
 import AudioOptionsMenu from "./menus/AudioOptionsMenu";
 import ThemeOptionsMenu from "./menus/ThemeOptionsMenu";
 
-//
+
 import { collection, query, orderBy, limit, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
