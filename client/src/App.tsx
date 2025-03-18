@@ -49,6 +49,11 @@ function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
   };
+// PrivateRoute Component
+const PrivateRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
@@ -62,6 +67,7 @@ const ThemeSelector = () => {
   const { theme, setTheme } = useTheme();
   const [showThemeOptions, setShowThemeOptions] = useState(false);
 
+  
   return (
     <div className="relative">
       <button 
@@ -99,6 +105,10 @@ const ThemeSelector = () => {
     </div>
   );
 };
+const PrivateRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
 // Main App component with theme integration
 function AppContent() {
@@ -123,11 +133,11 @@ function AppContent() {
           <Routes>
             {/* Route for landing page */}
             <Route path="/" element={isAuthenticated ? <Navigate to="/home" /> : <LandingPage />} />
-            <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/chat/:chatId" element={<ChatDetail />} />
+            <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+            <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
+        <Route path="/chat/:chatId" element={<PrivateRoute><ChatDetail /></PrivateRoute>} />
           </Routes>
         </div>
 
