@@ -4,6 +4,7 @@ import {
   FaArrowLeft, FaPaperPlane, FaSmile, FaTimes, FaEllipsisV, FaStar 
 } from "react-icons/fa";
 import { useTheme } from "../layout/ThemeProvider"; // Assuming same path structure
+import axios from "axios";
 
 // Define message type
 interface Message {
@@ -120,14 +121,36 @@ const Chat = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Handle chat title submission
-  const handleTitleSubmit = () => {
-    if (!titleInput.trim()) return;
-    setChatTitle(titleInput);
-    setShowTitlePrompt(false);
+  const handleTitleSubmit = async () => {
+    try {
+      if (!titleInput.trim()) return;
+      setChatTitle(titleInput);
+      setShowTitlePrompt(false);
+
+      const userDetails = localStorage.getItem("user");
+      if (!userDetails) {
+        console.error("Error: USER data is missing in localStorage.");
+        return;
+      }
+
+      const userObject = JSON.parse(userDetails);
+
+      const storedUserId = userObject.id;
+
+      // console.log("storedUserId : " ,storedUserId);
+    
+      const response = await axios.post("http://localhost:5000/api/chat/create-category", {
+        userId: storedUserId, 
+        topic: titleInput.trim()
+      });
+  
+      // console.log(response.data);
+    } catch (err) {
+      console.error("Error creating chat category:", err);
+    }
+   
   };
 
-  // Function to determine message width based on content length
   const getMessageWidth = (content: string) => {
     const length = content.length;
     

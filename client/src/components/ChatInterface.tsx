@@ -2,6 +2,8 @@ import { FC, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaTimes, FaSearch, FaFilter } from "react-icons/fa";
 import { useTheme } from "../layout/ThemeProvider"; // Import the theme hook
+import axios from "axios";
+import { motion } from "framer-motion";
 
 interface Chat {
   id: string;
@@ -18,19 +20,16 @@ const ChatInterface: FC = () => {
   const navigate = useNavigate();
   const headerRef = useRef<HTMLDivElement>(null);
   const { themeStyles } = useTheme(); // Get theme styles from context
+  const [chatCategories, setChatCategories] = useState<
+    { id: string; topic: string }[]
+  >([]);
 
   // Sample chat data with unique IDs and more categories
   const recentChats: Chat[] = [
     { id: "chat1", title: "Recent Breakup, felt sad", messageCount: 478, category: "Emotion" },
-    { id: "chat2", title: "Shitty Teacher at Uni", messageCount: 356, category: "Academic" },
-    { id: "chat3", title: "Just wanna stop existing", messageCount: 287, category: "Mental Health" }
+    { id: "chat2", title: "Just wanna stop existing", messageCount: 287, category: "Mental Health" }
   ];
 
-  const pastChats: Chat[] = [
-    { id: "chat4", title: "More about this Xmas", messageCount: 423, category: "Holiday" },
-    { id: "chat5", title: "I miss my best friend", messageCount: 312, category: "Relationship" },
-    { id: "chat6", title: "Failed my exam again", messageCount: 189, category: "Academic" }
-  ];
 
   const categories = ["All", "Emotion", "Academic", "Mental Health", "Relationship", "Holiday"];
 
@@ -192,6 +191,37 @@ const ChatInterface: FC = () => {
   // Chat item hover effect
   const [hoveredChat, setHoveredChat] = useState<string | null>(null);
 
+  const fetchChatsByUser = async () => {
+    try {
+      const userDetails = localStorage.getItem("user");
+      if (!userDetails) {
+        console.error("Error: USER data is missing in localStorage.");
+        return;
+      }
+
+      const userObject = JSON.parse(userDetails);
+
+      const userId = userObject.id;
+      
+      const response = await axios.get(`http://localhost:5000/api/chat/categoryByUser/${userId}`)
+      console.log(response.data);
+
+      const categories = response.data.map((chat: any) => ({
+        id: chat._id, 
+        topic: chat.topic,
+      }));
+
+      setChatCategories(categories);
+
+    }catch(err){
+      console.log(err);
+    }
+  }
+
+  useEffect(() => {
+    fetchChatsByUser();
+  }, []);
+
   const handleNewChat = () => {
     if (newChatTitle.trim()) {
       // In a real app, you'd generate a unique ID and save the chat
@@ -220,10 +250,6 @@ const ChatInterface: FC = () => {
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const filteredPastChats = pastChats.filter(chat => 
-    (activeFilter === "All" || chat.category === activeFilter) &&
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   // Chat item component for reuse
   const ChatItem = ({ chat }: { chat: Chat }) => {
@@ -340,52 +366,60 @@ const ChatInterface: FC = () => {
         </div>
 
         <div className="flex flex-col flex-grow p-8 space-y-6 overflow-y-auto">
-          {/* Recent chats section */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
-              Recent ({filteredRecentChats.length})
-              <div className={`absolute bottom-0 left-0 w-20 h-0.5 ${themeStyles.divider}`}></div>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredRecentChats.map((chat) => (
-                <ChatItem key={chat.id} chat={chat} />
-              ))}
-              {filteredRecentChats.length === 0 && (
-                <div className="col-span-2 text-center py-8 text-gray-500">
-                  No chats found matching your criteria
-                </div>
-              )}
+
+            <div>
+              <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
+                Past ({chatCategories.length})
+                <div className={`absolute bottom-0 left-0 w-20 h-0.5 ${themeStyles.divider}`}></div>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {chatCategories.map((chat) => (
+                  <ChatItem
+                    key={chat.id}
+                    chat={{
+                      id: chat.id,
+                      title: chat.topic,
+                      messageCount: 0, 
+                      category: "General", 
+                    }}
+                  />
+                ))}
+                {chatCategories.length === 0 && (
+                  <div className="col-span-2 text-center py-8 text-gray-500">
+                    No chats found matching your criteria
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
+                Dummy ({filteredRecentChats.length})
+                <div className={`absolute bottom-0 left-0 w-20 h-0.5 ${themeStyles.divider}`}></div>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredRecentChats.map((chat) => (
+                  <ChatItem key={chat.id} chat={chat} />
+                ))}
+                {filteredRecentChats.length === 0 && (
+                  <div className="col-span-2 text-center py-8 text-gray-500">
+                    No chats found matching your criteria
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Past chats section */}
-          <div>
-            <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
-              Past ({filteredPastChats.length})
-              <div className={`absolute bottom-0 left-0 w-20 h-0.5 ${themeStyles.divider}`}></div>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredPastChats.map((chat) => (
-                <ChatItem key={chat.id} chat={chat} />
-              ))}
-              {filteredPastChats.length === 0 && (
-                <div className="col-span-2 text-center py-8 text-gray-500">
-                  No chats found matching your criteria
-                </div>
-              )}
-            </div>
-          </div>
+
+          {/* New chat button with animated glow */}
+          <button
+            className={`fixed bottom-6 right-6 ${themeStyles.button} p-5 rounded-full shadow-lg transition-all cursor-pointer group`}
+            onClick={() => setIsModalOpen(true)}
+          >
+            <div className={`absolute inset-0 rounded-full ${themeStyles.button} blur-md opacity-0 group-hover:opacity-70 transition-opacity`}></div>
+            <FaPlus className="text-white text-2xl relative z-10" />
+          </button>
         </div>
-
-        {/* New chat button with animated glow */}
-        <button
-          className={`fixed bottom-6 right-6 ${themeStyles.button} p-5 rounded-full shadow-lg transition-all cursor-pointer group`}
-          onClick={() => setIsModalOpen(true)}
-        >
-          <div className={`absolute inset-0 rounded-full ${themeStyles.button} blur-md opacity-0 group-hover:opacity-70 transition-opacity`}></div>
-          <FaPlus className="text-white text-2xl relative z-10" />
-        </button>
-      </div>
 
       {/* Modal for new chat - with backdrop blur and animation */}
       {isModalOpen && (
