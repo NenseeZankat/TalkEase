@@ -28,15 +28,43 @@ const MessageList: FC<MessageListProps> = ({
   // Function to check if we should show a date divider
   const shouldShowDateDivider = (currentIndex: number): boolean => {
     if (currentIndex === 0) return true;
-    if (currentIndex === 2) return true; // For demonstration purposes
     
-    // In a real app, you would compare actual dates
+    // Compare current message date with previous message date
+    if (currentIndex > 0) {
+      const currentDate = new Date(messages[currentIndex].timestamp);
+      const prevDate = new Date(messages[currentIndex - 1].timestamp);
+      
+      return !isSameDay(currentDate, prevDate);
+    }
+    
     return false;
   };
+  const isSameDay = (date1: Date, date2: Date): boolean => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
 
-  // Function to get divider text
   const getDividerText = (index: number): string => {
-    return index === 0 ? "Today" : "Yesterday";
+    const messageDate = new Date(messages[index].timestamp);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    
+    if (isSameDay(messageDate, today)) {
+      return "Today";
+    } else if (isSameDay(messageDate, yesterday)) {
+      return "Yesterday";
+    } else {
+      // Format the date as needed, e.g., "Mar 20, 2025"
+      return messageDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    }
   };
 
   return (

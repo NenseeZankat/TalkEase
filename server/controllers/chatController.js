@@ -10,7 +10,7 @@ const index = new faiss.IndexFlatL2(d);
 export const generateResponse = async (req, res) => {
     try {
         console.log(req.body);
-        const { userMessage, userId, responseType, chatCategoryId } = req.body;
+        const { userMessage, userId, responseType, chatCategoryId ,timestamp } = req.body;
 
         if (!chatCategoryId) {
             return res.status(400).json({ msg: "chatCategoryId is required." });
@@ -22,27 +22,14 @@ export const generateResponse = async (req, res) => {
 
         let fastApiResponse;
 
-        if (typeof userMessage === "string") {
-            try {
-                fastApiResponse = await axios.post("http://localhost:8000/chat/", {
-                    message: userMessage,
-                    response_type: responseType,
-                });
-            } catch (error) {
-                console.error("FastAPI Error:", error.response ? error.response.data : error.message);
-                throw new Error("Failed to communicate with FastAPI service.");
-            }
-        } else {
-            try {
-                fastApiResponse = await axios.post("http://localhost:8000/chat/audio/", {
-                    audio_url: userMessage.audioUrl,
-                    response_type: responseType,
-                    user_id: userId,
-                });
-            } catch (error) {
-                console.error("FastAPI Audio Error:", error.response ? error.response.data : error.message);
-                throw new Error("Failed to process audio message.");
-            }
+        try {
+            fastApiResponse = await axios.post("http://localhost:8000/chat/", {
+                message: userMessage,
+                response_type: responseType,
+            });
+        } catch (error) {
+            console.error("FastAPI Error:", error.response ? error.response.data : error.message);
+            throw new Error("Failed to communicate with FastAPI service.");
         }
 
         const botResponse = fastApiResponse.data.response;
@@ -51,8 +38,10 @@ export const generateResponse = async (req, res) => {
         const newChat = new ChatHistory({
             chatCategoryId,
             userId,
-            userMessage: typeof userMessage === "string" ? userMessage : "Audio message",
+            userMessage,
             botResponse,
+            timestamp,
+            isAudio:false,
         });
         await newChat.save();
 
@@ -77,7 +66,7 @@ export const generateAudio = async (req, res) => {
     try {
         const { response_type, user_id, chatCategoryId } = req.body;
         const audioFile = req.file;
-
+        console.log(req.body)
         if (!audioFile) {
             return res.status(400).json({ error: "No audio file provided" });
         }
@@ -111,6 +100,8 @@ export const generateAudio = async (req, res) => {
             userId: user_id,
             userMessage: "Audio message",
             botResponse,
+            isAudio:true,
+            audioUrl,
         });
         await newChat.save();
 
@@ -155,7 +146,7 @@ export const getChatHistory = async (req, res) => {
             return res.status(400).json({ msg: "chatCategoryId is required" });
         }
 
-        const chats = await ChatHistory.find({ userId, chatCategoryId }).select("userMessage botResponse -_id");
+        const chats = await ChatHistory.find({ userId, chatCategoryId }).select("userMessage botResponse timestamp isAudio audioUrl -_id");
         res.json(chats);
     } catch (err) {
         console.error("Error in getChatHistory:", err.message);

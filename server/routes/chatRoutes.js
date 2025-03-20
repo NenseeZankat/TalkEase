@@ -8,7 +8,7 @@ const chatrouter = express.Router();
 
 chatrouter.post("/semantic-search", semanticSearch);
 
-chatrouter.get("/history/:userId", getChatHistory);
+chatrouter.get("/history/:userId/:chatCategoryId", getChatHistory);
 
 chatrouter.post("/generate-response", generateResponse);
 

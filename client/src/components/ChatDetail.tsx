@@ -1,11 +1,11 @@
 // src/components/chat/ChatDetail.tsx
 import { FC, useEffect, useState, useRef } from "react";
-import {  useLocation } from "react-router-dom";
+import {  useLocation, useParams } from "react-router-dom";
 import { useTheme } from "../layout/ThemeProvider";
 import axios from "axios";
 import { Message } from "../models/Message";
 import { ChatDetailProps } from "../models/ChatDetailProps";
-import { mockMessages } from "../dummydata/mockMessages";
+import { fetchChatMessages } from "../dummydata/mockMessages";
 
 // Import components
 import ChatHeader from "./ChatHeader";
@@ -13,10 +13,6 @@ import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import AudioOptionsMenu from "./menus/AudioOptionsMenu";
 import ThemeOptionsMenu from "./menus/ThemeOptionsMenu";
-
-
-import { collection, query, orderBy, limit, getDocs, addDoc } from "firebase/firestore";
-import { db } from "../firebaseConfig";
 
 const ChatDetail: FC<ChatDetailProps> = () => {
   const location = useLocation();
@@ -38,8 +34,16 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   const audioPlayerRefs = useRef<Record<string, HTMLAudioElement>>({});
   
   // User ID - in a real app, this would come from authentication
-  const userId = "67d053a0b18cab97965e65d0";
-  const chatId="1";
+  const { chatId } = useParams<{ chatId: string }>();
+  const userDetails = localStorage.getItem("user");
+  if (!userDetails) {
+    console.error("Error: USER data is missing in localStorage.");
+    return;
+  }
+
+  const userObject = JSON.parse(userDetails);
+
+  const userId = userObject.id;
   
   // Theme
   const { theme, setTheme, themeStyles } = useTheme();
@@ -70,9 +74,23 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     if (location.state && location.state.title) {
       setChatTitle(location.state.title);
     }
-    
-    setMessages(mockMessages);
-    
+    const loadMessages = async () => {
+      try {
+        
+        
+        const fetchedMessages = await fetchChatMessages(userId, chatId);
+        setMessages(fetchedMessages);
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      }
+    };
+
+    if (!chatId) {
+      console.error("Chat ID not found in URL");
+      return;
+    }
+    loadMessages();
+    // fetchChatHistory(chatId,userId);
     // Fetch chat history from API - commented out for now
     // fetchChatHistory(chatId, userId);
   }, [chatId, location.state]);
@@ -80,7 +98,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   // Fetch chat history from API
   const fetchChatHistory = async (chatId: string, userId: string) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/chat/history/${userId}`, {
+      const response = await axios.get(`http://localhost:5000/api/chat/history/${userId}/${chatId}`, {
         params: { chatId, userId }
       });
       
@@ -134,16 +152,13 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     setIsTyping(true);
     
     try {
-      // Send message to API
-      // const response = await axios.post("http://localhost:8000/chat/", {
-      //   userId: userId,
-      //   userMessage: messageContent
-      // });
 
       const response = await axios.post("http://localhost:5000/api/chat/generate-response", {
-        userId: userId,
-        userMessage: messageContent,
-        responseType:'text'
+          userId: userId,
+          userMessage: messageContent,
+          responseType: 'text',
+          chatCategoryId: chatId,
+          timestamp: new Date().toISOString()  // Use ISO format for consistent date handling
       });
       
       // Handle the response
@@ -196,39 +211,6 @@ const ChatDetail: FC<ChatDetailProps> = () => {
       )
     );
   };
-
-  // Handle audio message submission
-  // const handleAudioMessage = (audioUrl: string, duration: number) => {
-  //   // Send audio message
-  //   const audioMessage: Message = {
-  //     id: `user-audio-${Date.now()}`,
-  //     content: "Audio message",
-  //     sender: "user",
-  //     timestamp: new Date(),
-  //     isNew: true,
-  //     isAudio: true,
-  //     audioUrl: audioUrl,
-  //     audioDuration: duration
-  //   };
-    
-  //   setMessages(prev => [...prev, audioMessage]);
-  //   setIsTyping(true);
-    
-  //   // Simulate AI response after audio message
-  //   setTimeout(() => {
-  //     const aiMessage: Message = {
-  //       id: `ai-${Date.now()}`,
-  //       content: "I've received your audio message. Is there anything specific you'd like me to help you with?",
-  //       sender: "ai",
-  //       timestamp: new Date(),
-  //       isNew: true
-  //     };
-      
-  //     setMessages(prev => [...prev, aiMessage]);
-  //     setIsTyping(false);
-  //   }, 1500);
-  // };
-
   // Frontend: Modified handleAudioMessage function
   const handleAudioMessage = async (audioBlob: Blob, duration: number) => {
     // Create a temporary URL for immediate playback
@@ -247,63 +229,68 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     };
     
     // ... rest of your code
-  setMessages(prev => [...prev, audioMessage]);
+    setMessages(prev => [...prev, audioMessage]);
 
-  setIsTyping(true);
-  
-  // Create a FormData object and append the audio blob
-  const formData = new FormData();
-  formData.append('audio_file', audioBlob, 'audio-message.webm');
-  formData.append('response_type', 'both');
-  formData.append('user_id', userId);
-  
-  try {
-    // Send the actual audio file to the backend instead of URL
-    const response = await axios.post("http://localhost:5000/api/chat/audio-message", 
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+    setIsTyping(true);
+    
+    // Create a FormData object and append the audio blob
+    const formData = new FormData();
+    formData.append('audio_file', audioBlob, 'audio-message.webm');
+    formData.append('response_type', 'both');
+    formData.append('user_id', userId);
+    if (!chatId) {
+      console.error("Chat ID not found in URL");
+      return;
+    }
+    formData.append('chatCategoryId', chatId);
+    console.log(formData)
+    try {
+      // Send the actual audio file to the backend instead of URL
+      const response = await axios.post("http://localhost:5000/api/chat/audio-message", 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
-      }
-    );
-    
+      );
+      
 
-    
-    // Handle the response
-    if (response.data && response.data.botResponse) {
+      
+      // Handle the response
+      if (response.data && response.data.botResponse) {
+        setIsTyping(false);
+        
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          content: response.data.botResponse,
+          sender: "ai",
+          timestamp: new Date(),
+          isNew: true,
+          isAudio: response.data.audioUrl ? true : false,
+          audioUrl: response.data.audioUrl || null
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error("Invalid API response format");
+      }
+    } catch (error) {
+      console.error("Error sending audio message:", error);
       setIsTyping(false);
       
-      const aiMessage: Message = {
+      // Fallback response in case of API error
+      const errorMessage: Message = {
         id: `ai-${Date.now()}`,
-        content: response.data.botResponse,
+        content: "I'm sorry, I'm having trouble processing your audio message. Please try again later.",
         sender: "ai",
         timestamp: new Date(),
-        isNew: true,
-        isAudio: response.data.audioUrl ? true : false,
-        audioUrl: response.data.audioUrl || null
+        isNew: true
       };
       
-      setMessages(prev => [...prev, aiMessage]);
-    } else {
-      throw new Error("Invalid API response format");
+      setMessages(prev => [...prev, errorMessage]);
     }
-  } catch (error) {
-    console.error("Error sending audio message:", error);
-    setIsTyping(false);
-    
-    // Fallback response in case of API error
-    const errorMessage: Message = {
-      id: `ai-${Date.now()}`,
-      content: "I'm sorry, I'm having trouble processing your audio message. Please try again later.",
-      sender: "ai",
-      timestamp: new Date(),
-      isNew: true
-    };
-    
-    setMessages(prev => [...prev, errorMessage]);
-  }
-};
+  };
   
   // Audio playback controls
   const handlePlayAudio = (audioUrl: string, messageId: string) => {

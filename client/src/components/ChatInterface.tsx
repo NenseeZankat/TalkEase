@@ -4,6 +4,7 @@ import { FaPlus, FaTimes, FaSearch, FaFilter } from "react-icons/fa";
 import { useTheme } from "../layout/ThemeProvider"; // Import the theme hook
 import axios from "axios";
 import { motion } from "framer-motion";
+import Chat from "../pages/Chat";
 
 interface Chat {
   id: string;
@@ -222,20 +223,20 @@ const ChatInterface: FC = () => {
     fetchChatsByUser();
   }, []);
 
-  const handleNewChat = () => {
-    if (newChatTitle.trim()) {
-      // In a real app, you'd generate a unique ID and save the chat
-      const newChatId = `new-${Date.now()}`;
-      console.log("New Chat Created:", newChatTitle, "ID:", newChatId);
-      setNewChatTitle("");
-      setIsModalOpen(false);
+  // const handleNewChat = () => {
+  //   if (newChatTitle.trim()) {
+  //     // In a real app, you'd generate a unique ID and save the chat
+  //     const newChatId = `new-${Date.now()}`;
+  //     console.log("New Chat Created:", newChatTitle, "ID:", newChatId);
+  //     setNewChatTitle("");
+  //     setIsModalOpen(false);
       
-      // Navigate to the new chat with its ID
-      navigate(`/chat/${newChatId}`, { 
-        state: { title: newChatTitle } 
-      });
-    }
-  };
+  //     // Navigate to the new chat with its ID
+  //     navigate(`/chat/${newChatId}`, { 
+  //       state: { title: newChatTitle } 
+  //     });
+  //   }
+  // };
 
   const handleChatClick = (chatId: string, chatTitle: string) => {
     // Navigate to the selected chat with its ID
@@ -441,43 +442,7 @@ const ChatInterface: FC = () => {
               </button>
             </div>
             
-            <div className="p-6 w-96">
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Chat Title
-                </label>
-                <input
-                  type="text"
-                  value={newChatTitle}
-                  onChange={(e) => setNewChatTitle(e.target.value)}
-                  placeholder="Enter a title for your chat"
-                  className={`w-full p-3 ${themeStyles.inputField} rounded-lg border border-gray-700 focus:outline-none focus:ring-1 text-white`}
-                />
-              </div>
-              
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Category
-                </label>
-                <select
-                  className={`w-full p-3 ${themeStyles.inputField} rounded-lg border border-gray-700 focus:outline-none focus:ring-1 text-white`}
-                >
-                  {categories.slice(1).map(category => (
-                    <option key={category} value={category} className={`${themeStyles.inputField} text-white`}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <button
-                onClick={handleNewChat}
-                className={`w-full ${themeStyles.button} py-3 rounded-lg font-medium text-white transition-all shadow-md hover:shadow-lg`}
-                disabled={!newChatTitle.trim()}
-              >
-                Start New Chat
-              </button>
-            </div>
+            <Chat/>
           </div>
         </div>
       )}

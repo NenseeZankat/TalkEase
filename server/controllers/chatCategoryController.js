@@ -3,17 +3,25 @@ import ChatCategory from "../models/ChatCategory.js";
 export const createChatCategory = async (req, res) => {
     try {
         const { userId, topic } = req.body;
-
+        
         const chatCategory = new ChatCategory({ userId, topic });
         await chatCategory.save();
-
-        res.status(201).json(chatCategory);
+        
+        // Send response with the category ID specifically highlighted
+        res.status(201).json({
+            success: true,
+            chatId: chatCategory._id,
+            category: chatCategory
+        });
     } catch (error) {
         console.error("Error creating chat category:", error.message);
-        res.status(500).json({ msg: "Failed to create chat category.", error: error.message });
+        res.status(500).json({ 
+            success: false, 
+            msg: "Failed to create chat category.", 
+            error: error.message 
+        });
     }
 };
-
 export const getChatCategoriesByUser = async (req, res) => {
     try {
         const chatCategories = await ChatCategory.find({ userId: req.params.userId });

@@ -8,6 +8,8 @@ const chatHistorySchema = new mongoose.Schema(
     botResponse: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
     embeddings: { type: [Number]}, 
+    isAudio:{type : Boolean},
+    audioUrl : {type : String}
   },
   { timestamps: true }
 );
