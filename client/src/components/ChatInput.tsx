@@ -1,4 +1,5 @@
 import { FC, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
 import { FaPaperPlane, FaSmile, FaStar, FaMicrophone, FaStop } from "react-icons/fa";
 import { emojiCategories } from "../assets/emojiCategories";
 import { db, storage, ref, uploadBytes, getDownloadURL, addDoc, collection } from "../firebaseConfig"; 
@@ -8,11 +9,15 @@ interface ChatInputProps {
   onAudioMessage: (audioBlob: Blob, duration: number) => void;
   themeStyles: any;
 }
-
-const userId = "67d053a0b18cab97965e65d0";
-const chatId ="1";
-
 const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeStyles }) => {
+  const { chatId } = useParams<{ chatId: string }>();
+  const userDetails = localStorage.getItem("user");
+  if (!userDetails) {
+    console.error("Error: USER data is missing in localStorage.");
+    return;
+  }
+  const { userId } = JSON.parse(userDetails);
+
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showQuickResponses, setShowQuickResponses] = useState(false);
