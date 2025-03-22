@@ -33,7 +33,7 @@ model_path = os.getenv("MODEL_PATH")
 llm = Llama(model_path=model_path, n_ctx=2048, n_threads=8)
 
 # Load Whisper Model for Speech-to-Text
-whisper_model = whisper.load_model("base")
+whisper_model = whisper.load_model("large")
 
 # Initialize Firebase for Audio Storage
 cred = credentials.Certificate("./firebase-key.json")
@@ -130,9 +130,22 @@ async def chat_audio_file(
             f.write(await file.read())
         
         # Transcribe the audio
-        transcript = whisper_model.transcribe(temp_file_path)["text"].strip()
+        result = whisper_model.transcribe(temp_file_path, task="transcribe")
+
+        transcript = result["text"].strip()
+        language = result["language"]
+
+        print("extracted text :",transcript, language)
+
         os.remove(temp_file_path)  # Cleanup
-        
+
+        detected_lang = detect(transcript)
+        print(f"Detected Language: {detected_lang}")
+
+        if detected_lang != "en":
+            transcript = translator.translate(transcript, src=detected_lang, dest="en").text
+            print(f"Translated to English: {transcript}")
+            
         # Process with LLM
         chat_history.append(f"User: {transcript}\nAssistant:")
         prompt = "\n".join(chat_history)
@@ -140,11 +153,17 @@ async def chat_audio_file(
         response_text = output["choices"][0]["text"].strip()
         chat_history.append(response_text)
         
+        final_response = response_text
+
+        if detected_lang != "en":
+            final_response = translator.translate(response_text, src="en", dest=detected_lang).text
+            print(f"Translated Back to {detected_lang}: {final_response}")
+
         if response_type == "text":
-            return {"response": response_text}
+            return {"response": final_response}
         
         # Convert text response to speech and upload to Firebase
-        tts = gTTS(response_text)
+        tts = gTTS(final_response, lang = detected_lang)
         response_audio_path = "response.mp3"
         tts.save(response_audio_path)
         timestamp = int(time.time())
