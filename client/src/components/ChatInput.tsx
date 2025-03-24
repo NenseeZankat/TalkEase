@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { FaPaperPlane, FaSmile, FaStar, FaMicrophone, FaStop } from "react-icons/fa";
 import { emojiCategories } from "../assets/emojiCategories";
 import { db, storage, ref, uploadBytes, getDownloadURL, addDoc, collection } from "../firebaseConfig"; 
-
+import { classifyMessage } from "../utils/apiService";
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onAudioMessage: (audioBlob: Blob, duration: number) => void;
@@ -40,14 +40,17 @@ const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeSty
   ];
 
   // Send message handler
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (newMessage.trim()) {
-      onSendMessage(newMessage);
-      setNewMessage("");
-      setShowEmojiPicker(false);
-      setShowQuickResponses(false);
+      const messageLabel = await classifyMessage(newMessage); // Classify the message
+      onSendMessage(newMessage); // Send the message
+      setNewMessage(""); // Clear the message input
+      setShowEmojiPicker(false); // Hide emoji picker
+      setShowQuickResponses(false); // Hide quick responses
+      console.log("Message label:", messageLabel); // Log the message label
     }
   };
+  
 
   // Handle quick response selection
   const handleQuickResponse = (response: string) => {

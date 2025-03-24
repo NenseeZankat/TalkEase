@@ -1,6 +1,6 @@
 import express from "express";
 import { semanticSearch, getChatHistory, generateResponse , generateAudio} from "../controllers/chatController.js";
-import { createChatCategory, deleteChatCategory, getChatCategoriesByUser, updateChatCategory } from "../controllers/chatCategoryController.js";
+import { createChatCategory, deleteChatCategory, getChatCategoriesByUser, updateChatCategory ,classifyMessage} from "../controllers/chatCategoryController.js";
 
 const chatrouter = express.Router();
 
@@ -21,5 +21,6 @@ chatrouter.get("/categoryByUser/:userId", getChatCategoriesByUser);
 chatrouter.put("/updatecategory/:id", updateChatCategory);
 
 chatrouter.delete("/category/:id", deleteChatCategory);
+chatrouter.post("/classify", classifyMessage);
 
 export default chatrouter;

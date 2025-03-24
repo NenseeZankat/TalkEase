@@ -1,4 +1,6 @@
 import ChatCategory from "../models/ChatCategory.js";
+const GEMINI_API_URL = 'https://genai.googleapis.com/v1beta2/models/gemini-2.0-flash:generateContent';
+const API_KEY = 'AIzaSyAU5kJKU_VrPu_Z5R2c7y0RL83jzI8l1SM';  // Replace with your actual API key
 
 export const createChatCategory = async (req, res) => {
     try {
@@ -71,3 +73,37 @@ export const updateChatCategory = async (req, res) => {
         res.status(500).json({ msg: "Failed to update chat category.", error: error.message });
     }
 };
+
+export const classifyMessage = async (req, res) => {
+    console.log('Classifying message:', req.body.message);
+    const { message } = req.body;
+  
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+  
+    try {
+      // Make a request to the Gemini API
+      const response = await axios.post(
+        GEMINI_API_URL,
+        {
+          model: 'gemini-2.0-flash',
+          contents: `Classify the following message into one of the categories: Tech, Mental Health, General Talk, Knowledge, or any other related label. Message: "${message}"`,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
+      // Return the classified category
+      const category = response.data.text.trim();
+      res.json({ category });
+    } catch (error) {
+      console.error('Error classifying message:', error);
+      res.status(500).json({ error: "Error classifying message" });
+    }
+  };
+  
