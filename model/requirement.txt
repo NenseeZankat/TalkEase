@@ -1,0 +1,13 @@
+mui
+googletrans==4.0.0-rc1
+langdetect
+multer
+python-dotenv
+firebase-admin 
+ffmpeg-python 
+gtts 
+faster-whisper
+llama-cpp-python 
+transformers 
+torch 
+sentencepiece 
