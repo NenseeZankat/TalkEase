@@ -9,6 +9,7 @@ import { FaHome, FaComments, FaSignInAlt, FaUserPlus, FaBars, FaTimes, FaSignOut
 import ChatDetail from "./components/ChatDetail";
 import { ThemeProvider, useTheme } from "./layout/ThemeProvider";
 import LandingPage from "./pages/LandingPage"; // Import the LandingPage component
+import ChatAnalytics from "./pages/ChatAnalytics";
 
 // Define the auth context type
 interface AuthContextType {
@@ -138,6 +139,7 @@ function AppContent() {
             <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
             <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
         <Route path="/chat/:chatId" element={<PrivateRoute><ChatDetail /></PrivateRoute>} />
+            <Route path="/chatanalytics/:chatCategoryId" element={<ChatAnalytics/>} />
           </Routes>
         </div>
 

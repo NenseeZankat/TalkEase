@@ -259,48 +259,64 @@ const ChatInterface: FC = () => {
     // Generate random gradient angles for variation
     const gradientAngle = Math.floor(Math.random() * 360);
     
+    const navigate = useNavigate(); 
+
+    const handleAnalyze = (event: React.MouseEvent) => {
+        event.stopPropagation(); 
+        navigate(`/chatanalytics/${chat.id}`);
+    };
+
     return (
-      <div 
-        className={`flex items-center p-5 rounded-xl transition-all duration-300 cursor-pointer relative overflow-hidden ${
-          isHovered 
-            ? 'transform scale-[1.02] z-10' 
-            : `${themeStyles.card} hover:${themeStyles.hoverEffect}`
-        }`}
-        onClick={() => handleChatClick(chat.id, chat.title)}
-        onMouseEnter={() => setHoveredChat(chat.id)}
-        onMouseLeave={() => setHoveredChat(null)}
-      >
-        {/* Background glow effect on hover */}
-        {isHovered && (
-          <div className={`absolute inset-0 ${themeStyles.card} opacity-70 rounded-xl shadow-lg z-0 `}></div>
-        )}
-        
-        {/* Chat content */}
-        <div className="relative z-10 flex items-center w-full">
-          <div 
-            // className="w-12 h-12 rounded-full mr-4 flex items-center justify-center transition-all shadow-lg bg-[#10010d]"
-            className="w-12 h-12 rounded-full mr-4 flex items-center justify-center transition-all shadow-lg border"
-            style={{ 
-              background: isHovered ? themeStyles.userAvatar : themeStyles.aiAvatar,
-              transform: isHovered ? 'scale(1.1)' : 'scale(1)'
-            }}
-          >
-            <span className="text-white text-sm font-bold">{chat.title.substring(0, 2).toUpperCase()}</span>
-          </div>
-          <div className="flex-grow">
-            <p className="font-medium text-white">{chat.title}</p>
-            <div className="flex items-center text-sm">
-              <span className="text-gray-400">{chat.messageCount} Total</span>
-              <span className="mx-2 text-gray-500">&bull;</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(chat.category)}`}>
-                {chat.category}
-              </span>
+        <div 
+            className={`flex items-center p-5 rounded-xl transition-all duration-300 cursor-pointer relative overflow-hidden ${
+                isHovered 
+                    ? 'transform scale-[1.02] z-10' 
+                    : `${themeStyles.card} hover:${themeStyles.hoverEffect}`
+            }`}
+            onClick={() => handleChatClick(chat.id, chat.title)}
+            onMouseEnter={() => setHoveredChat(chat.id)}
+            onMouseLeave={() => setHoveredChat(null)}
+        >
+            {/* Background glow effect on hover */}
+            {isHovered && (
+                <div className={`absolute inset-0 ${themeStyles.card} opacity-70 rounded-xl shadow-lg z-0 `}></div>
+            )}
+            
+            {/* Chat content */}
+            <div className="relative z-10 flex items-center w-full">
+                <div 
+                    className="w-12 h-12 rounded-full mr-4 flex items-center justify-center transition-all shadow-lg border"
+                    style={{ 
+                        background: isHovered ? themeStyles.userAvatar : themeStyles.aiAvatar,
+                        transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+                    }}
+                >
+                    <span className="text-white text-sm font-bold">{chat.title.substring(0, 2).toUpperCase()}</span>
+                </div>
+                <div className="flex-grow">
+                    <p className="font-medium text-white">{chat.title}</p>
+                    <div className="flex items-center text-sm">
+                        <span className="text-gray-400">{chat.messageCount} Total</span>
+                        <span className="mx-2 text-gray-500">&bull;</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(chat.category)}`}>
+                            {chat.category}
+                        </span>
+                    </div>
+                </div>
+
+                <button  
+                    onClick={handleAnalyze}
+                    className="px-4 py-2 text-sm font-medium text-white border-2 rounded-lg shadow-md transition-all relative"
+                >
+                    Analyze
+                </button>
+
+
             </div>
-          </div>
         </div>
-      </div>
     );
   };
+
 
   // Get category styling
   const getCategoryColor = (category: string) => {

@@ -154,3 +154,43 @@ export const getChatHistory = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+export const getChatAnalysis = async (req, res) => {
+    try {
+        const { userId, chatCategoryId } = req.params;
+
+        if (!chatCategoryId) {
+            return res.status(400).json({ msg: "chatCategoryId is required" });
+        }
+
+        const chats = await ChatHistory.find({ userId, chatCategoryId })
+            .select("userMessage botResponse timestamp isAudio audioUrl messageLabel -_id");
+
+        if (!chats.length) {
+            return res.json({ msg: "No chat history found for this user and category." });
+        }
+
+        // label analysis
+        const labelCounts = chats.reduce((acc, chat) => {
+            acc[chat.messageLabel] = (acc[chat.messageLabel] || 0) + 1;
+            return acc;
+        }, {});
+
+        // hour analysis
+        const hoursCount = chats.reduce((acc, chat) => {
+            const hour = new Date(chat.timestamp).getHours();
+            acc[hour] = (acc[hour] || 0) + 1;
+            return acc;
+        }, {});
+
+        res.json({
+            totalChats: chats.length,
+            labelCounts,
+            activeHours: hoursCount,
+        });
+
+    } catch (err) {
+        console.error("Error in getChatAnalysis:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
