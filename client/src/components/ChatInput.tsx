@@ -42,12 +42,10 @@ const ChatInput: FC<ChatInputProps> = ({ onSendMessage, onAudioMessage, themeSty
   // Send message handler
   const handleSendMessage = async () => {
     if (newMessage.trim()) {
-      const messageLabel = await classifyMessage(newMessage); // Classify the message
       onSendMessage(newMessage); // Send the message
       setNewMessage(""); // Clear the message input
       setShowEmojiPicker(false); // Hide emoji picker
       setShowQuickResponses(false); // Hide quick responses
-      console.log("Message label:", messageLabel); // Log the message label
     }
   };
   

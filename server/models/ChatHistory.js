@@ -9,7 +9,8 @@ const chatHistorySchema = new mongoose.Schema(
     timestamp: { type: Date, default: Date.now },
     embeddings: { type: [Number]}, 
     isAudio:{type : Boolean},
-    audioUrl : {type : String}
+    audioUrl : {type : String},
+    messageLabel: {type: String}
   },
   { timestamps: true }
 );

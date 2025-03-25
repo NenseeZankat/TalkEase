@@ -32,13 +32,13 @@ class AudioRequest(BaseModel):
 model_path = os.getenv("MODEL_PATH")
 llm = Llama(model_path=model_path, n_ctx=2048, n_threads=8)
 
-# Load Whisper Model for Speech-to-Text
-whisper_model = whisper.load_model("large")
+# # Load Whisper Model for Speech-to-Text
+# whisper_model = whisper.load_model("large")
 
-# Initialize Firebase for Audio Storage
-cred = credentials.Certificate("./firebase-key.json")
-initialize_app(cred, {"storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET")})
-bucket = storage.bucket()
+# # Initialize Firebase for Audio Storage
+# cred = credentials.Certificate("./firebase-key.json")
+# initialize_app(cred, {"storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET")})
+# bucket = storage.bucket()
 
 # Maintain chat history
 chat_history = []

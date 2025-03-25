@@ -10,7 +10,7 @@ const index = new faiss.IndexFlatL2(d);
 export const generateResponse = async (req, res) => {
     try {
         console.log(req.body);
-        const { userMessage, userId, responseType, chatCategoryId ,timestamp } = req.body;
+        const { userMessage, userId, responseType, chatCategoryId ,timestamp, messageLabel } = req.body;
 
         if (!chatCategoryId) {
             return res.status(400).json({ msg: "chatCategoryId is required." });
@@ -41,6 +41,7 @@ export const generateResponse = async (req, res) => {
             userMessage,
             botResponse,
             timestamp,
+            messageLabel,
             isAudio:false,
         });
         await newChat.save();

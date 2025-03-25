@@ -6,6 +6,7 @@ import axios from "axios";
 import { Message } from "../models/Message";
 import { ChatDetailProps } from "../models/ChatDetailProps";
 import { fetchChatMessages } from "../dummydata/mockMessages";
+import { classifyMessage } from "../utils/apiService";
 
 // Import components
 import ChatHeader from "./ChatHeader";
@@ -137,6 +138,8 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
     
+    const messageLabel = await classifyMessage(messageContent); // Classify the message
+
     // Add user message to UI immediately
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -158,7 +161,8 @@ const ChatDetail: FC<ChatDetailProps> = () => {
           userMessage: messageContent,
           responseType: 'text',
           chatCategoryId: chatId,
-          timestamp: new Date().toISOString()  // Use ISO format for consistent date handling
+          timestamp: new Date().toISOString(),  // Use ISO format for consistent date handling
+          messageLabel: messageLabel
       });
       
       // Handle the response
