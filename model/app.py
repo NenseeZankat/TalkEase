@@ -50,6 +50,10 @@ def upload_to_firebase(file_path, file_name):
     blob.make_public()
     return blob.public_url
 
+@app.get("/test")
+async def test():
+    return {"message": "Model is working"}
+
 @app.post("/chat/")
 async def chat(request: ChatRequest):
     user_message = request.message.strip()

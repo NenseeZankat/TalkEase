@@ -1,6 +1,18 @@
 import ChatCategory from "../models/ChatCategory.js";
-const GEMINI_API_URL = 'https://genai.googleapis.com/v1beta2/models/gemini-2.0-flash:generateContent';
-const API_KEY = 'AIzaSyAU5kJKU_VrPu_Z5R2c7y0RL83jzI8l1SM';  // Replace with your actual API key
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const API_KEY = process.env.API_KEY;
+
+if (!API_KEY) {
+  throw new Error("API_KEY is missing. Please set it in your .env file.");
+}
+
+const genAI = new GoogleGenerativeAI(API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
 
 export const createChatCategory = async (req, res) => {
     try {
@@ -75,35 +87,37 @@ export const updateChatCategory = async (req, res) => {
 };
 
 export const classifyMessage = async (req, res) => {
-    console.log('Classifying message:', req.body.message);
+    console.log("Classifying message:", req.body.message);
     const { message } = req.body;
-  
+
     if (!message) {
-      return res.status(400).json({ error: "Message is required" });
+        return res.status(400).json({ error: "Message is required" });
     }
-  
+
     try {
-      // Make a request to the Gemini API
-      const response = await axios.post(
-        GEMINI_API_URL,
-        {
-          model: 'gemini-2.0-flash',
-          contents: `Classify the following message into one of the categories: Tech, Mental Health, General Talk, Knowledge, or any other related label. Message: "${message}"`,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json',
-          },
+        const result = await model.generateContent({
+            contents: [
+                {
+                    role: "user",
+                    parts: [{ text: `Classify this message into one of the categories: Tech, Mental Health, General Talk, Knowledge, or Other. Message: "${message}"` }],
+                },
+            ],
+        });
+
+        // console.log("Full API Response:", JSON.stringify(result, null, 2)); 
+
+        const responseText = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+        console.log("Response from Gemini API: ", responseText);
+
+        if (!responseText) {
+            throw new Error("Invalid response from Gemini API");
         }
-      );
-  
-      // Return the classified category
-      const category = response.data.text.trim();
-      res.json({ category });
+
+        res.json({ category: responseText });
     } catch (error) {
-      console.error('Error classifying message:', error);
-      res.status(500).json({ error: "Error classifying message" });
+        console.error("Error classifying message:", error);
+        res.status(500).json({ error: "Error classifying message" });
     }
-  };
-  
+};
+
