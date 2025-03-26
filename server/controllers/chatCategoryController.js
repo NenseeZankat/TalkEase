@@ -113,8 +113,27 @@ export const classifyMessage = async (req, res) => {
         if (!responseText) {
             throw new Error("Invalid response from Gemini API");
         }
+        if(responseText==="Mental Health"){
+            console.log("Message is related to Mental Health, analyzing with FastAPI...");
 
+            // Call FastAPI for emotion & mental health analysis
+            const fastApiResponse = await axios.post("http://127.0.0.1:8000/analyze/", {
+                message: message
+            });
+            console.log("FastAPI Response:", fastApiResponse.data);
+            const savedData = {
+                category: responseText,
+                mood: fastApiResponse.data.emotion,
+                mental_health_condition: fastApiResponse.data.mental_health_status
+            };
+
+            // Example: Save in a database (Uncomment based on your DB)
+            // await db.collection("messages").insertOne(savedData);
+
+            return res.json(savedData);
+        }
         res.json({ category: responseText });
+
     } catch (error) {
         console.error("Error classifying message:", error);
         res.status(500).json({ error: "Error classifying message" });
