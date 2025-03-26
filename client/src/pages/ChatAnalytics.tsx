@@ -11,6 +11,9 @@ const ChatAnalytics = () => {
         labelCounts: Record<string, number>;
         activeHours: Record<string, number>;
         totalChats: number;
+        moodTracking: Record<string, number>;
+        mentalHealth: Record<string, number>;
+        
     }
 
     const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -32,13 +35,13 @@ const ChatAnalytics = () => {
                 console.log("API Response:", response.data);
         
                 if (!response.data.labelCounts || !response.data.activeHours) {
-                    setAnalytics({ labelCounts: {}, activeHours: {}, totalChats: 0 });
+                    setAnalytics({ labelCounts: {}, activeHours: {}, totalChats: 0 , moodTracking: {}, mentalHealth: {}});
                 } else {
                     setAnalytics(response.data);
                 }
             } catch (error) {
                 console.error("API Fetch Error:", error);
-                setAnalytics({ labelCounts: {}, activeHours: {}, totalChats: 0 });
+                setAnalytics({ labelCounts: {}, activeHours: {}, totalChats: 0 , moodTracking: {}, mentalHealth: {}});
             }
         };
         
@@ -66,6 +69,15 @@ const ChatAnalytics = () => {
     const activeHoursData = Object.entries(analytics.activeHours).map(([hour, count]) => ({
         hour: `${hour}:00`,
         count: count,
+    }));
+    const moodTrackingData = Object.entries(analytics.moodTracking).map(([mood, count]) => ({
+        name: mood,
+        value: count,
+    }));
+
+    const mentalHealthData = Object.entries(analytics.mentalHealth).map(([condition, count]) => ({
+        name: condition,
+        value: count,
     }));
 
     return (
@@ -108,7 +120,41 @@ const ChatAnalytics = () => {
                     </CardContent>
                 </Card>
             </div>
+{/* Mood Tracking Section */}
+{analytics.moodTracking && Object.keys(analytics.moodTracking).length > 0 && (
+                <Card>
+                    <CardContent className="p-6 flex flex-col items-center">
+                        <h2 className="text-2xl font-bold text-white mb-4">Mood Tracking</h2>
+                        <PieChart width={350} height={350}>
+                            <Pie data={moodTrackingData} dataKey="value" nameKey="name" outerRadius={130} innerRadius={60} paddingAngle={5}>
+                                {moodTrackingData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+                                ))}
+                            </Pie>
+                            <Tooltip wrapperStyle={{ backgroundColor: "rgba(0, 0, 0, 0.7)", color: "white" }} />
+                            <Legend verticalAlign="bottom" layout="horizontal" align="center" />
+                        </PieChart>
+                    </CardContent>
+                </Card>
+            )}
 
+            {/* Mental Health Section */}
+            {analytics.mentalHealth && Object.keys(analytics.mentalHealth).length > 0 && (
+                <Card>
+                    <CardContent className="p-6 flex flex-col items-center">
+                        <h2 className="text-2xl font-bold text-white mb-4">Mental Health Conditions</h2>
+                        <PieChart width={350} height={350}>
+                            <Pie data={mentalHealthData} dataKey="value" nameKey="name" outerRadius={130} innerRadius={60} paddingAngle={5}>
+                                {mentalHealthData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+                                ))}
+                            </Pie>
+                            <Tooltip wrapperStyle={{ backgroundColor: "rgba(0, 0, 0, 0.7)", color: "white" }} />
+                            <Legend verticalAlign="bottom" layout="horizontal" align="center" />
+                        </PieChart>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };

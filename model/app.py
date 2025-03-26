@@ -10,15 +10,21 @@ from gtts import gTTS
 from fastapi.responses import FileResponse
 from firebase_admin import credentials, storage, initialize_app
 from dotenv import load_dotenv
-
+from transformers import pipeline
+import pandas as pd
 from langdetect import detect
 from googletrans import Translator
+import torch
 
 load_dotenv()
+# Load emotion detection model (RoBERTa fine-tuned on GoEmotions)
+emotion_model = pipeline("text-classification", model="kashyaparun/Mental-Health-Chatbot-using-RoBERTa-fine-tuned-on-GoEmotion", return_all_scores=False)
+
+# Load mental health classification model (LLaMA 3.1 8B)
+mental_health_model = pipeline("text-classification", model="kingabzpro/Llama-3.1-8B-Instruct-Mental-Health-Classification", return_all_scores=False)
 
 app = FastAPI()
 translator = Translator()
-
 class ChatRequest(BaseModel):
     message: str
     response_type: str
@@ -27,6 +33,9 @@ class AudioRequest(BaseModel):
     audio_url: str
     response_type: str = "both"
     user_id: str
+class ClassificationRequest(BaseModel):
+    message: str
+
 
 # Load LLaMA Model
 model_path = os.getenv("MODEL_PATH")
@@ -185,3 +194,22 @@ async def chat_audio_file(
             os.remove("response.mp3")
         print(f"Error processing audio file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing audio file: {str(e)}")
+@app.post("/analyze/")
+async def analyze(request: ClassificationRequest):
+    user_message = request.message.strip()
+    
+    if not user_message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+    
+    # Get emotion classification
+    emotion_result = emotion_model(user_message)
+    emotion = emotion_result[0]["label"]
+    
+    # Get mental health classification
+    mental_health_result = mental_health_model(user_message)
+    mental_health_status = mental_health_result[0]["label"]
+    
+    return {
+        "emotion": emotion,
+        "mental_health_status": mental_health_status
+    }
