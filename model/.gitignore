@@ -5,3 +5,4 @@ __pycache__
 response.mp3
 .env
 firebase-key.json
+faiss_index.index

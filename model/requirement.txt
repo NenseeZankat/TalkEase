@@ -1,7 +1,5 @@
-
 googletrans==4.0.0-rc1
 langdetect
-
 python-dotenv
 firebase-admin 
 ffmpeg-python 
@@ -11,3 +9,9 @@ llama-cpp-python
 transformers 
 torch 
 sentencepiece 
+faiss-cpu 
+openai
+fastapi 
+uvicorn
+sentence-transformers
+firebase-admin
