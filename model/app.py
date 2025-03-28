@@ -18,7 +18,6 @@ from transformers import pipeline
 import pandas as pd
 from langdetect import detect
 from googletrans import Translator
-import torch
 
 # Load environment variables
 load_dotenv()
