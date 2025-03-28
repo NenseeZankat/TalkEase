@@ -124,7 +124,6 @@ export const classifyMessage = async (req, res) => {
             const savedData = {
                 category: responseText,
                 mood: fastApiResponse.data.emotion,
-                mental_health_condition: fastApiResponse.data.mental_health_status
             };
 
             // Example: Save in a database (Uncomment based on your DB)
