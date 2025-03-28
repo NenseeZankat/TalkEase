@@ -6,3 +6,5 @@ response.mp3
 .env
 firebase-key.json
 faiss_index.index
+mental_health_model
+mental_health_onnx_model
