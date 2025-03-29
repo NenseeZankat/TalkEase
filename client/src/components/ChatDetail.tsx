@@ -138,7 +138,7 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
     
-    const messageLabel = await classifyMessage(messageContent); // Classify the message
+    const messageLabel = await classifyMessage(messageContent,userId,chatId); // Classify the message
 
     // Add user message to UI immediately
     const userMessage: Message = {

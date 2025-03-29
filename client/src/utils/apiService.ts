@@ -4,12 +4,14 @@ import axios from 'axios';
 const BACKEND_URL = 'http://localhost:5000/api/chat/classify'; // Replace with your backend URL
 
 // Function to classify message via the backend
-export const classifyMessage = async (message: string) => {
+export const classifyMessage = async (message: stringchat,userId:string,chatCategoryId:string,) => {
   try {
     const response = await axios.post(
       BACKEND_URL,
       {
         message: message,
+        userId:userId,
+        chatCategoryId:chatCategoryId,
       }
     );
     return response.data.category; // Return the classification result

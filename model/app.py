@@ -22,6 +22,8 @@ import numpy as np
 from transformers import AutoTokenizer
 from scipy.special import softmax
 
+load_dotenv()
+
 tokenizer = AutoTokenizer.from_pretrained("monologg/bert-base-cased-goemotions-original")
 
 # Load the ONNX model

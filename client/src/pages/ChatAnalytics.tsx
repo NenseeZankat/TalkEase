@@ -190,7 +190,7 @@ const ChatAnalytics = () => {
         labelCounts: Record<string, number>;
         activeHours: Record<string, number>;
         totalChats: number;
-        emotions: Record<string, number>;
+        emotions: Array<{ mood: string }> | Record<string, number>;
     }
 
     const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -216,7 +216,7 @@ const ChatAnalytics = () => {
                         labelCounts: {}, 
                         activeHours: {}, 
                         totalChats: 0, 
-                        emotions: {} 
+                        emotions: [] 
                     });
                 } else {
                     setAnalytics(response.data);
@@ -227,7 +227,7 @@ const ChatAnalytics = () => {
                     labelCounts: {}, 
                     activeHours: {}, 
                     totalChats: 0, 
-                    emotions: {} 
+                    emotions: [] 
                 });
             }
         };
@@ -257,18 +257,45 @@ const ChatAnalytics = () => {
         count: count,
     }));
 
-    const emotionData = Object.entries(analytics.emotions || {}).map(([emotion, count]) => ({
-        name: emotion,
-        value: count,
-        color: EMOTION_COLORS[emotion.toLowerCase()] || EMOTION_COLORS.default
-    }));
+    // Process emotions data based on its structure
+    let emotionData: Array<{name: string, value: number, color: string}> = [];
+    
+    if (analytics.emotions) {
+        // Check if emotions is an array of objects with mood property
+        if (Array.isArray(analytics.emotions)) {
+            // Count occurrences of each mood
+            const moodCounts: Record<string, number> = {};
+            analytics.emotions.forEach(item => {
+                if (item && item.mood) {
+                    const mood = item.mood;
+                    moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+                }
+            });
+            
+            emotionData = Object.entries(moodCounts).map(([mood, count]) => ({
+                name: mood,
+                value: count,
+                color: EMOTION_COLORS[mood.toLowerCase()] || EMOTION_COLORS.default
+            }));
+        } 
+        // If emotions is already in the expected format (Record<string, number>)
+        else if (typeof analytics.emotions === 'object') {
+            emotionData = Object.entries(analytics.emotions).map(([emotion, count]) => ({
+                name: emotion,
+                value: count,
+                color: EMOTION_COLORS[emotion.toLowerCase()] || EMOTION_COLORS.default
+            }));
+        }
+    }
 
-    // Emotion Intensity Computation
+    // Calculate emotion intensity only if we have data
     const totalEmotions = emotionData.reduce((sum, emotion) => sum + emotion.value, 0);
-    const emotionIntensity = emotionData.map(emotion => ({
-        ...emotion,
-        percentage: ((emotion.value / totalEmotions) * 100).toFixed(2)
-    })).sort((a, b) => b.value - a.value);
+    const emotionIntensity = emotionData.length > 0 
+        ? emotionData.map(emotion => ({
+            ...emotion,
+            percentage: ((emotion.value / totalEmotions) * 100).toFixed(2)
+          })).sort((a, b) => b.value - a.value)
+        : [];
 
     return (
         <div className="p-6 space-y-6 bg-gray-900 text-white">
@@ -342,7 +369,7 @@ const ChatAnalytics = () => {
                 </Card>
             </div>
 
-            {/* Emotion Analysis */}
+            {/* Emotion Analysis - Only render if we have emotion data */}
             {emotionData.length > 0 && (
                 <Card>
                     <CardContent className="p-6">

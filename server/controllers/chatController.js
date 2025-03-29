@@ -3,6 +3,7 @@ import faiss from "faiss-node";
 import axios from "axios";
 import multer from "multer";
 import FormData from "form-data";
+import Message from "../models/Message.js";
 
 const d = 128;
 const index = new faiss.IndexFlatL2(d);
@@ -165,11 +166,13 @@ export const getChatAnalysis = async (req, res) => {
 
         const chats = await ChatHistory.find({ userId, chatCategoryId })
             .select("userMessage botResponse timestamp isAudio audioUrl messageLabel -_id");
+        
+        const emotions = await Message.find({userId,chatCategoryId}).select("mood -_id")
 
         if (!chats.length) {
             return res.json({ msg: "No chat history found for this user and category." });
         }
-
+        console.log(emotions)
         // label analysis
         const labelCounts = chats.reduce((acc, chat) => {
             acc[chat.messageLabel] = (acc[chat.messageLabel] || 0) + 1;
@@ -187,6 +190,7 @@ export const getChatAnalysis = async (req, res) => {
             totalChats: chats.length,
             labelCounts,
             activeHours: hoursCount,
+            emotions
         });
 
     } catch (err) {

@@ -1,6 +1,8 @@
 import ChatCategory from "../models/ChatCategory.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import axios from "axios";
+import Message from "../models/Message.js";
 
 dotenv.config();
 
@@ -89,12 +91,14 @@ export const updateChatCategory = async (req, res) => {
 export const classifyMessage = async (req, res) => {
     console.log("Classifying message:", req.body.message);
     const { message } = req.body;
+    const { chatCategoryId , userId } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: "Message is required" });
     }
 
     try {
+        // Step 1: Classify the message category using Gemini API
         const result = await model.generateContent({
             contents: [
                 {
@@ -104,38 +108,53 @@ export const classifyMessage = async (req, res) => {
             ],
         });
 
-        // console.log("Full API Response:", JSON.stringify(result, null, 2)); 
-
         const responseText = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
         console.log("Response from Gemini API: ", responseText);
 
         if (!responseText) {
             throw new Error("Invalid response from Gemini API");
         }
-        if(responseText==="Mental Health"){
-            console.log("Message is related to Mental Health, analyzing with FastAPI...");
 
-            // Call FastAPI for emotion & mental health analysis
+        // Step 2: Always perform emotion analysis with FastAPI
+        console.log(`Analyzing emotion for message in category: ${responseText}`);
+        
+        try {
             const fastApiResponse = await axios.post("http://127.0.0.1:8000/analyze/", {
                 message: message
             });
             console.log("FastAPI Response:", fastApiResponse.data);
-            const savedData = {
+            
+            // Step 3: Prepare the combined response data
+            const savedData = new Message({
                 category: responseText,
                 mood: fastApiResponse.data.emotion,
-            };
+                userId: userId || null,
+                userMessage: message,
+                responseType: 'text',
+                chatCategoryId: chatCategoryId || null,
+                timestamp: new Date().toISOString(),
+                messageLabel: responseText
+            });
 
-            // Example: Save in a database (Uncomment based on your DB)
-            // await db.collection("messages").insertOne(savedData);
+            await savedData.save();
+
+            // Optional: Save to database
+            // Save to database
 
             return res.json(savedData);
+            
+        } catch (fastApiError) {
+            console.error("Error calling FastAPI for emotion analysis:", fastApiError);
+            // Still return category without emotion if FastAPI fails
+            return res.json({ 
+                category: responseText,
+                mood: "unknown",
+                error: "Failed to analyze emotion"
+            });
         }
-        res.json({ category: responseText });
 
     } catch (error) {
         console.error("Error classifying message:", error);
         res.status(500).json({ error: "Error classifying message" });
     }
 };
-
