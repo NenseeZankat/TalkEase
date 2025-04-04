@@ -1,8 +1,11 @@
 import express from "express";
 import { semanticSearch, getChatHistory, generateResponse , generateAudio, getChatAnalysis} from "../controllers/chatController.js";
 import { createChatCategory, deleteChatCategory, getChatCategoriesByUser, updateChatCategory ,classifyMessage} from "../controllers/chatCategoryController.js";
+import multer from "multer";
 
 const chatrouter = express.Router();
+const upload = multer(); 
+
 
 // chatrouter.post("/save-chat", saveChatHistory);
 
@@ -12,7 +15,7 @@ chatrouter.get("/history/:userId/:chatCategoryId", getChatHistory);
 
 chatrouter.post("/generate-response", generateResponse);
 
-// chatrouter.post("/audio-message" , generateAudio)
+chatrouter.post("/audio-message", upload.single('audio_file') , generateAudio)
 
 chatrouter.post("/create-category/", createChatCategory);
 

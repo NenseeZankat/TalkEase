@@ -63,47 +63,63 @@ const upload = multer({
 // Export multer middleware for file uploads
 export const uploadMiddleware = upload.single("audio_file");
 
-// Generate Audio Response Function
 export const generateAudio = async (req, res) => {
     try {
-        const { response_type, user_id, chatCategoryId } = req.body;
+        const { response_type = 'both', user_id, chatCategoryId } = req.body;
         const audioFile = req.file;
-        console.log(req.body)
+
         if (!audioFile) {
             return res.status(400).json({ error: "No audio file provided" });
         }
+
         if (!chatCategoryId) {
             return res.status(400).json({ error: "chatCategoryId is required" });
         }
 
+        // Create FormData to send to FastAPI
         const formData = new FormData();
-        formData.append("file", audioFile.buffer, {
-            filename: "audio-message.webm",
+        formData.append('file', audioFile.buffer, {
+            filename: 'audio-message.webm',
             contentType: audioFile.mimetype,
         });
-        formData.append("response_type", response_type);
-        formData.append("user_id", user_id);
+        formData.append('response_type', response_type);
+        formData.append('user_id', user_id);
 
         let fastApiResponse;
         try {
             fastApiResponse = await axios.post("http://localhost:8000/chat/audio/file", formData, {
-                headers: { ...formData.getHeaders() },
+                headers: formData.getHeaders(),
             });
         } catch (error) {
-            console.error("FastAPI File Upload Error:", error.response ? error.response.data : error.message);
-            throw new Error("Failed to process audio file.");
+            console.error("FastAPI File Upload Error:", error.response?.data || error.message);
+            return res.status(500).json({ error: "Failed to process audio file." });
         }
 
         const botResponse = fastApiResponse.data.response;
-        let audioUrl = fastApiResponse.data.audio_url || null;
+        const userMessage = fastApiResponse.data.userMessage;
+        const audioUrl = fastApiResponse.data.audio_url || null;
 
+        let category = "General Talk";
+        try {
+            const classificationRes = await axios.post('http://localhost:5000/api/chat/classify', {
+                message: userMessage,
+                userId: user_id,
+                chatCategoryId
+            });
+            category = classificationRes.data.category || category;
+        } catch (classificationErr) {
+            console.error("Classification API error:", classificationErr.message);
+        }
+
+        // Save chat to DB
         const newChat = new ChatHistory({
             chatCategoryId,
             userId: user_id,
-            userMessage: "Audio message",
+            userMessage: userMessage,
             botResponse,
-            isAudio:true,
+            isAudio: true,
             audioUrl,
+            messageLabel:category
         });
         await newChat.save();
 
@@ -113,6 +129,7 @@ export const generateAudio = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
 
 export const semanticSearch = async (req, res) => {
     try {

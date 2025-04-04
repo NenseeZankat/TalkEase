@@ -387,7 +387,7 @@ async def chat_audio_file(
         audio_url = upload_to_firebase(response_audio_path, audio_filename)
         os.remove(response_audio_path)  # Cleanup
         
-        return {"response": response_text, "audio_url": audio_url}
+        return {"response": response_text, "audio_url": audio_url , "userMessage": transcript}
     
     except Exception as e:
         if os.path.exists(temp_file_path):
