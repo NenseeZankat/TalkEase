@@ -332,33 +332,44 @@ async def chat_audio_file(
     response_type: str = Form("both"),
     user_id: str = Form(...)
 ):
-    # Save the uploaded file temporarily
-    temp_file_path = f"temp_audio_{int(time.time())}.webm"
-    try:
-        with open(temp_file_path, "wb") as f:
-            f.write(await file.read())
-        
-        # Transcribe the audio
-        result = whisper_model.transcribe(temp_file_path, task="transcribe")
+    timestamp = int(time.time())
+    chat_id = "1"  # You can make this dynamic later
 
+    user_temp_path = f"user_audio_{timestamp}.webm"
+    response_audio_path = "response.mp3"
+
+    try:
+        # Save user audio file
+        with open(user_temp_path, "wb") as f:
+            f.write(await file.read())
+
+        # Upload user audio to Firebase
+        user_audio_filename = f"audioMessages/user/user_{user_id}_{timestamp}_{chat_id}.webm"
+        user_audio_url = upload_to_firebase(user_temp_path, user_audio_filename)
+
+        # Transcribe the audio using Whisper
+        result = whisper_model.transcribe(user_temp_path, task="transcribe")
         transcript = result["text"].strip()
         language = result["language"]
-        
-        print("extracted text :",transcript, language)
 
-        os.remove(temp_file_path)  # Cleanup
+        print("Extracted text:", transcript, "Language:", language)
 
+        os.remove(user_temp_path)  # Cleanup user audio temp file
+
+        # Detect language from transcript
         detected_lang = detect(transcript)
         print(f"Detected Language: {detected_lang}")
 
+        # Translate to English if needed
         if language != "en":
             transcript = translator.translate(transcript, src=language, dest="en").text
             print(f"Translated to English: {transcript}")
-            
+
         # Process with LLM
         chat_history.append(f"User: {transcript}\nAssistant:")
         prompt = "\n".join(chat_history)
         faiss_result = search_faiss(transcript)
+
         if faiss_result:
             print("Request found in Faiss database")
             response_text = faiss_result['response']
@@ -367,35 +378,46 @@ async def chat_audio_file(
             response_text = output["choices"][0]["text"].strip()
 
         chat_history.append(response_text)
-        
+
         final_response = response_text
 
+        # Translate back to original language if needed
         if language != "en":
             final_response = translator.translate(response_text, src="en", dest=language).text
             print(f"Translated Back to {language}: {final_response}")
 
         if response_type == "text":
-            return {"response": final_response}
-        
-        # Convert text response to speech and upload to Firebase
-        tts = gTTS(final_response, lang = language)
-        response_audio_path = "response.mp3"
+            return {
+                "response": final_response,
+                "userMessage": transcript,
+                "userAudioUrl": user_audio_url
+            }
+
+        # Convert text response to speech
+        tts = gTTS(final_response, lang=language)
         tts.save(response_audio_path)
-        timestamp = int(time.time())
-        chat_id = "1"  # You might want to make this dynamic
-        audio_filename = f"audioMessages/response/response_{user_id}_{timestamp}_{chat_id}.webm"
-        audio_url = upload_to_firebase(response_audio_path, audio_filename)
+
+        # Upload assistant response audio to Firebase
+        response_audio_filename = f"audioMessages/response/response_{user_id}_{timestamp}_{chat_id}.webm"
+        audio_url = upload_to_firebase(response_audio_path, response_audio_filename)
         os.remove(response_audio_path)  # Cleanup
-        
-        return {"response": response_text, "audio_url": audio_url , "userMessage": transcript}
-    
+
+        return {
+            "response": response_text,
+            "audio_url": audio_url,
+            "userMessage": transcript,
+            "userAudioUrl": user_audio_url
+        }
+
     except Exception as e:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-        if os.path.exists("response.mp3"):
-            os.remove("response.mp3")
+        # Cleanup on failure
+        if os.path.exists(user_temp_path):
+            os.remove(user_temp_path)
+        if os.path.exists(response_audio_path):
+            os.remove(response_audio_path)
         print(f"Error processing audio file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing audio file: {str(e)}")
+
 def classify_emotion_onnx(text: str):
      input_text = text
 

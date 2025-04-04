@@ -65,7 +65,7 @@ export const uploadMiddleware = upload.single("audio_file");
 
 export const generateAudio = async (req, res) => {
     try {
-        const { response_type = 'both', user_id, chatCategoryId } = req.body;
+        const { response_type = 'both', user_id, chatCategoryId} = req.body;
         const audioFile = req.file;
 
         if (!audioFile) {
@@ -97,6 +97,7 @@ export const generateAudio = async (req, res) => {
 
         const botResponse = fastApiResponse.data.response;
         const userMessage = fastApiResponse.data.userMessage;
+        const userAudioUrl = fastApiResponse.data.userAudioUrl || null;
         const audioUrl = fastApiResponse.data.audio_url || null;
 
         let category = "General Talk";
@@ -119,7 +120,8 @@ export const generateAudio = async (req, res) => {
             botResponse,
             isAudio: true,
             audioUrl,
-            messageLabel:category
+            messageLabel:category,
+            userAudioUrl, 
         });
         await newChat.save();
 
@@ -165,8 +167,9 @@ export const getChatHistory = async (req, res) => {
             return res.status(400).json({ msg: "chatCategoryId is required" });
         }
 
-        const chats = await ChatHistory.find({ userId, chatCategoryId }).select("userMessage botResponse timestamp isAudio audioUrl -_id");
+        const chats = await ChatHistory.find({ userId, chatCategoryId }).select("userMessage botResponse timestamp isAudio audioUrl userAudioUrl -_id");
         res.json(chats);
+
     } catch (err) {
         console.error("Error in getChatHistory:", err.message);
         res.status(500).json({ error: err.message });

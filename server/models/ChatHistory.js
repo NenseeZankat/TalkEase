@@ -10,7 +10,8 @@ const chatHistorySchema = new mongoose.Schema(
     embeddings: { type: [Number]}, 
     isAudio:{type : Boolean},
     audioUrl : {type : String},
-    messageLabel: {type: String}
+    messageLabel: {type: String},
+    userAudioUrl: {type: String}
   },
   { timestamps: true }
 );

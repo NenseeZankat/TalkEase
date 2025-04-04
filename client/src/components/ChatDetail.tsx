@@ -299,6 +299,9 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   // Audio playback controls
   const handlePlayAudio = (audioUrl: string, messageId: string) => {
     // Stop any currently playing audio
+
+    // console.log("Stopping all audio players before playing new one.");
+
     Object.values(audioPlayerRefs.current).forEach(audio => {
       audio.pause();
       audio.currentTime = 0;
