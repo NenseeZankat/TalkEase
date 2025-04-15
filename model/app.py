@@ -330,10 +330,10 @@ async def chat_audio(file: UploadFile = File(...), response_type: str = Form("bo
 async def chat_audio_file(
     file: UploadFile = File(...),
     response_type: str = Form("both"),
-    user_id: str = Form(...)
+    user_id: str = Form(...),
+    chat_id: str = Form(...)
 ):
     timestamp = int(time.time())
-    chat_id = "1"  # You can make this dynamic later
 
     user_temp_path = f"user_audio_{timestamp}.webm"
     response_audio_path = "response.mp3"

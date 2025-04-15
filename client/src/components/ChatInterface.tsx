@@ -25,12 +25,6 @@ const ChatInterface: FC = () => {
     { id: string; topic: string }[]
   >([]);
 
-  // Sample chat data with unique IDs and more categories
-  const recentChats: Chat[] = [
-    { id: "chat1", title: "Recent Breakup, felt sad", messageCount: 478, category: "Emotion" },
-    { id: "chat2", title: "Just wanna stop existing", messageCount: 287, category: "Mental Health" }
-  ];
-
 
   const categories = ["All", "Emotion", "Academic", "Mental Health", "Relationship", "Holiday"];
 
@@ -244,12 +238,6 @@ const ChatInterface: FC = () => {
       state: { title: chatTitle }
     });
   };
-
-  // Filter chats based on search and category filter
-  const filteredRecentChats = recentChats.filter(chat => 
-    (activeFilter === "All" || chat.category === activeFilter) &&
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
   
 
   // Chat item component for reuse
@@ -409,22 +397,6 @@ const ChatInterface: FC = () => {
               </div>
             </div>
 
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-[#c77dff] pb-2 relative mb-4">
-                Dummy ({filteredRecentChats.length})
-                <div className={`absolute bottom-0 left-0 w-20 h-0.5 ${themeStyles.divider}`}></div>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredRecentChats.map((chat) => (
-                  <ChatItem key={chat.id} chat={chat} />
-                ))}
-                {filteredRecentChats.length === 0 && (
-                  <div className="col-span-2 text-center py-8 text-gray-500">
-                    No chats found matching your criteria
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
 

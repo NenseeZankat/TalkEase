@@ -84,6 +84,7 @@ export const generateAudio = async (req, res) => {
         });
         formData.append('response_type', response_type);
         formData.append('user_id', user_id);
+        formData.append('chat_id',chatCategoryId);
 
         let fastApiResponse;
         try {

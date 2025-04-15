@@ -5,7 +5,7 @@ import { useTheme } from "../layout/ThemeProvider";
 import axios from "axios";
 import { Message } from "../models/Message";
 import { ChatDetailProps } from "../models/ChatDetailProps";
-import { fetchChatMessages } from "../dummydata/mockMessages";
+import { fetchChatMessages } from "../ChatMessage/mockMessages";
 import { classifyMessage } from "../utils/apiService";
 
 // Import components
@@ -78,9 +78,11 @@ const ChatDetail: FC<ChatDetailProps> = () => {
     const loadMessages = async () => {
       try {
         
-        
-        const fetchedMessages = await fetchChatMessages(userId, chatId);
-        setMessages(fetchedMessages);
+        if(chatId)
+        {
+          const fetchedMessages = await fetchChatMessages(userId, chatId);
+          setMessages(fetchedMessages);
+        }
       } catch (error) {
         console.error("Error loading messages:", error);
       }
@@ -137,8 +139,8 @@ const ChatDetail: FC<ChatDetailProps> = () => {
   // Send a new message
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
-    
-    const messageLabel = await classifyMessage(messageContent,userId,chatId); // Classify the message
+    if(chatId != null)
+      var messageLabel = await classifyMessage(messageContent,userId,chatId); // Classify the message
 
     // Add user message to UI immediately
     const userMessage: Message = {
