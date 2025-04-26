@@ -103,7 +103,15 @@ export const classifyMessage = async (req, res) => {
             contents: [
                 {
                     role: "user",
-                    parts: [{ text: `Classify this message into one of the categories: Tech, Mental Health, General Talk, Knowledge, or Other. Message: "${message}"` }],
+                    parts : [
+                        {
+                          text: `Classify the following message strictly into one of these categories only: Tech, Mental Health, General Talk, Knowledge, Entertainment, or Other. 
+                      Do not create or use any subcategories. Only return one category exactly as listed.
+                      
+                      Message: "${message}"`
+                        }
+                      ]
+                      
                 },
             ],
         });
