@@ -4,6 +4,10 @@
 
 ---
 
+##  Architecture
+![Image](https://github.com/user-attachments/assets/1c195e3b-99d3-4b15-9753-15ab2d0f8959)
+
+
 ## 🧠 What It Does
 
 - Enables **multilingual interactions** for broader accessibility.
