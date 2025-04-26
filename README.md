@@ -45,7 +45,7 @@ Explore the model implementation here:
 
 ![Image](https://github.com/user-attachments/assets/7b6a20ed-ba87-417f-9ea6-c09d182300ca)
 
-![Image](https://github.com/user-attachments/assets/ba6b0c30-9681-402d-b22f-1bc292b48246)
+![Image](https://github.com/user-attachments/assets/29691a38-f1cd-4edf-84ad-928285099747)
 
 ![Image](https://github.com/user-attachments/assets/19945dec-5cc6-408a-a454-089393fd8d33)
 
