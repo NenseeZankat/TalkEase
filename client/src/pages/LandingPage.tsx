@@ -190,7 +190,7 @@ const LandingPage: React.FC = () => {
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  position: 'relative'
+                  position: 'relative',
                 }}
               >
                 <Paper 
@@ -200,7 +200,7 @@ const LandingPage: React.FC = () => {
                     overflow: 'hidden',
                     maxWidth: '500px',
                     width: '100%',
-                    height: isMobile ? '300px' : '400px',
+                    height: isMobile ? '460px' : '460px',
                     background: 'rgba(15, 23, 42, 0.6)',
                     p: 3,
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
@@ -270,7 +270,7 @@ const LandingPage: React.FC = () => {
       }}
     >
       <Typography variant="body1" sx={{ color: 'white' }}>
-        Of course! TalkEase can answer your questions, assist with tasks, provide recommendations, and much more. We're designed to make communication effortless and productive.
+        Of course! TalkEase can answer your questions, assist with tasks, provide recommendations, and much more.
       </Typography>
     </Box>
   </Box>
@@ -309,29 +309,53 @@ const LandingPage: React.FC = () => {
           </Grid>
         </Container>
         
-        {/* Features Section */}
+              {/* Features Section */}
         <Container maxWidth="lg" sx={{ mt: 12, mb: 8, position: 'relative', zIndex: 1 }}>
-          <Typography variant="h3" component="h2" align="center" gutterBottom sx={{ fontWeight: 700, mb: 6 }}>
+          <Typography
+            variant="h3"
+            component="h2"
+            align="center"
+            gutterBottom
+            sx={{ fontWeight: 700, mb: 6 }}
+          >
             Why Choose TalkEase?
           </Typography>
-          
+
           <Grid container spacing={4}>
             {[
               {
-                title: "Instant Responses",
-                description: "Get accurate answers and assistance in seconds, no matter your question."
+                title: "Instant, Accurate Assistance",
+                description: "Receive precise answers and support within seconds, ensuring a seamless user experience for any query.",
+                icon: "⚡"
               },
               {
-                title: "Personalized Experience",
-                description: "TalkEase learns from your interactions to provide more relevant assistance over time."
+                title: "Adaptive Personalization",
+                description: "TalkEase continuously refines its understanding from your interactions to deliver increasingly tailored and relevant assistance.",
+                icon: "🎯"
               },
               {
-                title: "Natural Conversations",
-                description: "Our AI understands context and natural language for smooth, human-like dialogues."
+                title: "Context-Aware Conversations",
+                description: "Engage in fluid, human-like dialogues powered by advanced natural language understanding and contextual awareness.",
+                icon: "💬"
+              },
+              {
+                title: "Multilingual Interaction",
+                description: "Communicate effortlessly across multiple languages, expanding accessibility for a global audience.",
+                icon: "🌎"
+              },
+              {
+                title: "Multimodal Responses",
+                description: "Experience responses in both text and audio formats, providing a richer and more dynamic user interaction.",
+                icon: "🎙️"
+              },
+              {
+                title: "Real-time Sentiment Analysis",
+                description: "Analyze and understand emotional tones instantly to drive more empathetic and intelligent conversations.",
+                icon: "📈"
               }
             ].map((feature, index) => (
               <Grid item xs={12} md={4} key={index}>
-                <Paper 
+                <Paper
                   elevation={2}
                   sx={{
                     borderRadius: '16px',
@@ -341,15 +365,37 @@ const LandingPage: React.FC = () => {
                     background: 'rgba(15, 23, 42, 0.6)',
                     backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
                     '&:hover': {
                       transform: 'translateY(-8px)',
                       boxShadow: '0 12px 20px rgba(0, 0, 0, 0.2)'
                     }
                   }}
                 >
-                  <Typography variant="h5" component="h3" gutterBottom sx={{ fontWeight: 600, color: 'white' }}>
+                  <Typography
+                    component="div"
+                    sx={{
+                      fontSize: '2.5rem', // reduced icon size
+                      mb: 2
+                    }}
+                  >
+                    {feature.icon}
+                  </Typography>
+
+                  {/* Title */}
+                  <Typography
+                    variant="h5"
+                    component="h3"
+                    gutterBottom
+                    sx={{ fontWeight: 600, color: 'white' }}
+                  >
                     {feature.title}
                   </Typography>
+
+                  {/* Description */}
                   <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     {feature.description}
                   </Typography>
@@ -358,62 +404,28 @@ const LandingPage: React.FC = () => {
             ))}
           </Grid>
         </Container>
-        
-        {/* Call to Action */}
-        <Box 
-          sx={{ 
-            background: 'linear-gradient(45deg, #7c3aed, #6d28d9)',
-            py: 8,
+
+        {/* Footer */}
+        <Box
+          sx={{
+            bgcolor: 'rgba(15, 23, 42, 0.95)',
+            color: 'white',
             position: 'relative',
-            zIndex: 1
+            py:2,
+            zIndex: 1,
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)'
           }}
         >
-          <Container maxWidth="md">
-            <Box textAlign="center">
-              <Typography variant="h4" component="h2" gutterBottom sx={{ color: 'white', fontWeight: 700 }}>
-                Ready to experience smarter conversations?
+          <Container>
+            {/* Bottom Copyright */}
+            <Box mt={1} textAlign="center">
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                Made by Neha, Apeksha & Nensee
               </Typography>
-              <Typography variant="h6" paragraph sx={{ color: 'rgba(255, 255, 255, 0.8)', mb: 4 }}>
-              </Typography>
-              <Button 
-                variant="contained" 
-                color="secondary" 
-                size="large" 
-                onClick={handleSignupClick}
-                sx={{ 
-                  fontWeight: 600, 
-                  borderRadius: '8px', 
-                  px: 6, 
-                  py: 1.5,
-                  boxShadow: '0 8px 16px rgba(244, 63, 94, 0.3)'
-                }}
-              >
-                Get Started Now
-              </Button>
             </Box>
           </Container>
         </Box>
-        
-        {/* Footer */}
-        <Box sx={{ bgcolor: 'rgba(15, 23, 42, 0.9)', color: 'white', py: 4, position: 'relative', zIndex: 1 }}>
-          <Container>
-            <Grid container spacing={2} justifyContent="space-between" alignItems="center">
-              <Grid item>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <ChatIcon sx={{ fontSize: 24, mr: 1 }} />
-                  <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                    TalkEase
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item>
-                <Typography variant="body2" color="rgba(255, 255, 255, 0.6)">
-                  © {new Date().getFullYear()} TalkEase. All rights reserved.
-                </Typography>
-              </Grid>
-            </Grid>
-          </Container>
-        </Box>
+
       </Box>
     </ThemeProvider>
   );
