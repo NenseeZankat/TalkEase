@@ -136,7 +136,7 @@ function AppContent() {
             <Route path="/" element={isAuthenticated ? <Navigate to="/home" /> : <LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+            <Route path="/home" element={<Home />} />
             <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
             <Route path="/chat/:chatId" element={<PrivateRoute><ChatDetail /></PrivateRoute>} />
             <Route path="/chatanalytics/:chatCategoryId" element={<ChatAnalytics/>} />

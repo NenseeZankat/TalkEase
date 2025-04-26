@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 import axios from "axios";
 import Message from "../models/Message.js";
+import ChatHistory from "../models/ChatHistory.js";
 
 dotenv.config();
 
@@ -38,12 +39,44 @@ export const createChatCategory = async (req, res) => {
         });
     }
 };
+
 export const getChatCategoriesByUser = async (req, res) => {
     try {
-        const chatCategories = await ChatCategory.find({ userId: req.params.userId });
+        const userId = req.params.userId;
 
-        console.log(`Found ${chatCategories.length} chat categories for user: ${req.params.userId}`);
-        res.status(200).json(chatCategories);
+        const chatCategories = await ChatCategory.find({ userId });
+
+        console.log(`Found ${chatCategories.length} chat categories for user: ${userId}`);
+
+        const baseUrl = "http://localhost:5000"; 
+
+        const categoriesWithTotalCount = [];
+
+        for (const category of chatCategories) {
+            try {
+                
+                const chats = await ChatHistory.find({ userId, chatCategoryId: category._id });
+
+                const totalChats = chats.length || 0; 
+
+                console.log(`Total chats for category ${category._id}: ${totalChats}`);
+
+                categoriesWithTotalCount.push({
+                    ...category.toObject(),
+                    totalChats
+                });
+            } catch (error) {
+                console.error(`Error fetching analysis for category ${category._id}:`, error.message);
+                categoriesWithTotalCount.push({
+                    ...category.toObject(),
+                    totalChats: 0,
+                    error: error.message
+                });
+            }
+        }
+
+        res.status(200).json(categoriesWithTotalCount);
+
     } catch (error) {
         console.error("Error fetching chat categories:", error.message);
         res.status(500).json({ msg: "Failed to get chat categories.", error: error.message });

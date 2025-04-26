@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef } from "react";
+import { FC, useState, useEffect, useRef, use } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaTimes, FaSearch, FaFilter } from "react-icons/fa";
 import { useTheme } from "../layout/ThemeProvider"; // Import the theme hook
@@ -18,11 +18,13 @@ const ChatInterface: FC = () => {
   const [newChatTitle, setNewChatTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [reload, setReload] = useState(false);
+
   const navigate = useNavigate();
   const headerRef = useRef<HTMLDivElement>(null);
   const { themeStyles } = useTheme(); // Get theme styles from context
   const [chatCategories, setChatCategories] = useState<
-    { id: string; topic: string }[]
+    { id: string; topic: string; totalCounts: number }[]
   >([]);
 
 
@@ -40,6 +42,10 @@ const ChatInterface: FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    fetchChatsByUser();
+  },[])
 
   // Background animation effect
   useEffect(() => {
@@ -204,9 +210,11 @@ const ChatInterface: FC = () => {
       const categories = response.data.map((chat: any) => ({
         id: chat._id, 
         topic: chat.topic,
+        totalCounts: chat.totalChats,
       }));
 
       setChatCategories(categories);
+      setReload(false);
 
     }catch(err){
       console.log(err);
@@ -215,7 +223,8 @@ const ChatInterface: FC = () => {
 
   useEffect(() => {
     fetchChatsByUser();
-  }, []);
+  }, [reload]);
+
 
   // const handleNewChat = () => {
   //   if (newChatTitle.trim()) {
@@ -285,10 +294,9 @@ const ChatInterface: FC = () => {
                     <p className="font-medium text-white">{chat.title}</p>
                     <div className="flex items-center text-sm">
                         <span className="text-gray-400">{chat.messageCount} Total</span>
-                        <span className="mx-2 text-gray-500">&bull;</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(chat.category)}`}>
+                        {/* <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(chat.category)}`}>
                             {chat.category}
-                        </span>
+                        </span> */}
                     </div>
                 </div>
 
@@ -338,7 +346,7 @@ const ChatInterface: FC = () => {
           {/* Header content */}
           <div className="relative z-10">
             <h1 className="text-white text-3xl font-bold mb-2">Chat Conversations</h1>
-            <p className="text-gray-200 text-sm">1571 Total &bull; 32 Left this Month</p>
+            {/* <p className="text-gray-200 text-sm">1571 Total &bull; 32 Left this Month</p> */}
             
             {/* Search and filter bar */}
             {/* <div className="mt-6 flex justify-center">
@@ -384,7 +392,7 @@ const ChatInterface: FC = () => {
                     chat={{
                       id: chat.id,
                       title: chat.topic,
-                      messageCount: 0, 
+                      messageCount: chat.totalCounts, 
                       category: "General", 
                     }}
                   />
