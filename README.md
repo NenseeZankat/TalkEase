@@ -39,6 +39,23 @@ Explore the model implementation here:
 
 ---
 
+## ScreenShots
+
+![Image](https://github.com/user-attachments/assets/85635b04-c529-4806-8b7c-235815d4c3fa)
+
+![Image](https://github.com/user-attachments/assets/7b6a20ed-ba87-417f-9ea6-c09d182300ca)
+
+![Image](https://github.com/user-attachments/assets/ba6b0c30-9681-402d-b22f-1bc292b48246)
+
+![Image](https://github.com/user-attachments/assets/19945dec-5cc6-408a-a454-089393fd8d33)
+
+![Image](https://github.com/user-attachments/assets/2c19a480-ff77-4083-a9ba-30e82ab4817e)
+
+![Image](https://github.com/user-attachments/assets/ed17b152-0065-4a17-bab5-7f1781cb5258)
+
+![Image](https://github.com/user-attachments/assets/6a07d2bb-a301-4bcb-8e61-f1c2988a7c35)
+
+
 ## 📦 Tech Stack
 - Frontend: React.js, TypeScript 
 - Backend: Node.js, Express.js 
