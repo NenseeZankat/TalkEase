@@ -341,7 +341,7 @@ const ChatInterface: FC = () => {
             <p className="text-gray-200 text-sm">1571 Total &bull; 32 Left this Month</p>
             
             {/* Search and filter bar */}
-            <div className="mt-6 flex justify-center">
+            {/* <div className="mt-6 flex justify-center">
               <div className={`relative ${themeStyles.inputField} backdrop-blur-md rounded-l-full border-y border-l border-gray-700 w-64 flex items-center px-4`}>
                 <FaSearch className="text-gray-400 mr-2" />
                 <input
@@ -366,7 +366,7 @@ const ChatInterface: FC = () => {
                   ))}
                 </select>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 

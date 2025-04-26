@@ -515,11 +515,7 @@ const ChatAnalytics = () => {
                             <Tooltip 
                                 wrapperStyle={{ backgroundColor: "rgba(0, 0, 0, 0.7)", color: "white" }} 
                             />
-                            <Legend 
-                                verticalAlign="bottom" 
-                                layout="horizontal" 
-                                align="center" 
-                            />
+                            
                         </PieChart>
                     </CardContent>
                 </Card>
